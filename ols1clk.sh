@@ -33,11 +33,11 @@ RAND1=$RANDOM
 RAND2=$RANDOM
 RAND3=$RANDOM
 DATE=`date`
-ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
-ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
+ADMINPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
+ROOTPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
-USERPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
+USERPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
 WORDPRESSPATH=$SERVER_ROOT
 WPPORT=80
 EMAIL=root@localhost
@@ -202,7 +202,7 @@ function install_ols_centos
     
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed
-    yum -y epel-release
+    yum -y install epel-release
     yum -y install lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
@@ -397,8 +397,39 @@ function test_mysql_password
     export TESTPASSWORDERROR=$TESTPASSWORDERROR
 }
 
+mariadbplugins() {
+    echo "------------------------------------------------"
+    echo "Installing MariaDB 10 plugins"
+    echo "------------------------------------------------"
+    echo "mysql -e \"INSTALL SONAME 'metadata_lock_info';\""
+    mysql -e "INSTALL SONAME 'metadata_lock_info';"
+    echo "mysql -e \"INSTALL SONAME 'query_cache_info';\""
+    mysql -e "INSTALL SONAME 'query_cache_info';"
+    echo "mysql -e \"INSTALL SONAME 'query_response_time';\""
+    mysql -e "INSTALL SONAME 'query_response_time';"
+    # echo "------------------------------------------------"
+    # echo "Installing MariaDB 10 XtraDB Engine plugin"
+    # echo "------------------------------------------------"
+    # echo "mysql -e \"INSTALL SONAME 'ha_xtradb';\""
+    # mysql -e "INSTALL SONAME 'ha_xtradb';"
+    echo "mysql -t -e \"SELECT * FROM mysql.plugin;\""
+    mysql -t -e "SELECT * FROM mysql.plugin;"
+    echo "mysql -t -e \"SHOW PLUGINS;\""
+    mysql -t -e "SHOW PLUGINS;"
+    echo "mysql -t -e \"SHOW ENGINES;\""
+    mysql -t -e "SHOW ENGINES;"
+}
+
 function install_mysql
 {
+    local VERSION=
+    if [ "x$OSVER" = "xCENTOS5" ] ; then
+        VERSION=5
+    elif [ "x$OSVER" = "xCENTOS6" ] ; then
+        VERSION=6
+    else #if [ "x$OSVER" = "xCENTOS7" ] ; then
+        VERSION=7
+    fi
     if [ "x$ISCENTOS" = "x1" ] ; then
         echo "rpm --import http://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
         rpm --import http://yum.mariadb.org/RPM-GPG-KEY-MariaDB
@@ -471,8 +502,8 @@ EOF
             if [[ ! -z "$OLDMYSQL_LIBS" ]]; then
                 # echo "rpm -e --nodeps $OLDMYSQL_LIBS"
                 # rpm -e --nodeps $OLDMYSQL_LIBS
-                echo "yum -y remove mariadb-libs"
-                yum -y remove mariadb-libs
+                echo "rpm -e --nodeps mariadb-libs"
+                rpm -e --nodeps mariadb-libs
             fi
         fi # VERSION != 7
         
@@ -481,20 +512,26 @@ EOF
             # for CentOS 7.x and excluding default mariadb 
             # opting for mariadb official yum repo instead
             if [[ ! `grep exclude /etc/yum.conf` ]]; then
-                echo "Can't find exclude line in /etc/yum.conf... adding exclude line for mariadb*"
-                echo "exclude=mariadb*">> /etc/yum.conf
+                echo
+                # echo "Can't find exclude line in /etc/yum.conf... adding exclude line for mariadb*"
+                # echo "exclude=mariadb*">> /etc/yum.conf
             fi
         fi # VERSION = 7
         
         # set /etc/my.cnf templates
         # setmycnf
         
+        # check mariadb.repo
+        echo
+        echo "check /etc/yum.repos.d/mariadb.repo"
+        cat /etc/yum.repos.d/mariadb.repo
+        
         # only run for CentOS 6.x
         if [[ "$VERSION" != '7' ]]; then
             echo ""
             echo "*************************************************"
             echo "MariaDB 10.1.x YUM install..."
-            echo "yum -q -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared --disablerepo=epel"
+            echo "yum -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared --disablerepo=epel"
             echo "*************************************************"
             echo ""
             time yum -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared --disablerepo=epel
@@ -507,7 +544,7 @@ EOF
             echo ""
             echo "*************************************************"
             echo "MariaDB 10.1.x YUM install..."
-            echo "yum -q -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared"
+            echo "yum -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared"
             echo "*************************************************"
             echo ""
             time yum -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared
@@ -598,6 +635,11 @@ FFF
     mysqladmin -u root password $ROOTPASSWORD
     if [ $? = 0 ] ; then
         echoGreen "Mysql root password set to $ROOTPASSWORD"
+cat > "/root/.my.cnf" <<EOF
+[client]
+user=root
+password=$ROOTPASSWORD
+EOF
     else
         #test it is the current password
         mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
@@ -639,6 +681,7 @@ FFF
             fi
         fi
     fi
+    mariadbplugins
 }
 
 function setup_mysql
