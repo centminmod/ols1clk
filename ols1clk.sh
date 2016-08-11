@@ -202,6 +202,7 @@ function install_ols_centos
     
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed
+    yum -y epel-release
     yum -y install lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
