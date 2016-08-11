@@ -400,13 +400,182 @@ function test_mysql_password
 function install_mysql
 {
     if [ "x$ISCENTOS" = "x1" ] ; then
-        yum -y install mysql-server
+        echo "rpm --import http://yum.mariadb.org/RPM-GPG-KEY-MariaDB"
+        rpm --import http://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+
+    ################################################
+    if [[ "$VERSION" = '7' ]]; then
+        if [ "$(uname -m)" == 'x86_64' ]; then
+cat > "/etc/yum.repos.d/mariadb.repo" <<EOF
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.1/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOF
+        else
+cat > "/etc/yum.repos.d/mariadb.repo" <<EOF
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.1/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOF
+        fi
+    fi
+    ################################################
+    if [[ "$VERSION" = '6' ]]; then
+        if [ "$(uname -m)" == 'x86_64' ]; then
+cat > "/etc/yum.repos.d/mariadb.repo" <<EOF
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.1/centos6-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOF
+        else
+cat > "/etc/yum.repos.d/mariadb.repo" <<EOF
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.1/centos6-x86
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOF
+        fi
+    fi
+    ################################################
+
+        # only run for CentOS 6.x
+        if [[ "$VERSION" != '7' ]]; then
+            echo ""
+            echo "Check for existing mysql-server packages"
+            OLDMYSQLSERVER=`rpm -qa | grep 'mysql-server' | head -n1`
+            if [[ ! -z "$OLDMYSQLSERVER" ]]; then
+                echo "rpm -e --nodeps $OLDMYSQLSERVER"
+                rpm -e --nodeps $OLDMYSQLSERVER
+            fi
+        fi # VERSION != 7
+        
+        # only run for CentOS 7.x
+        if [[ "$VERSION" = '7' ]]; then
+            echo ""
+            echo "Check for existing mariadb packages"
+            OLDMYSQLSERVER=`rpm -qa | grep 'mariadb-server' | head -n1`
+            if [[ ! -z "$OLDMYSQLSERVER" ]]; then
+                echo "rpm -e --nodeps $OLDMYSQLSERVER"
+                rpm -e --nodeps $OLDMYSQLSERVER
+            fi
+            echo ""
+            echo "Check for existing mariadb-libs package"
+            OLDMYSQL_LIBS=`rpm -qa | grep 'mariadb-libs' | head -n1`
+            if [[ ! -z "$OLDMYSQL_LIBS" ]]; then
+                # echo "rpm -e --nodeps $OLDMYSQL_LIBS"
+                # rpm -e --nodeps $OLDMYSQL_LIBS
+                echo "yum -y remove mariadb-libs"
+                yum -y remove mariadb-libs
+            fi
+        fi # VERSION != 7
+        
+        # only run for CentOS 7.x
+        if [[ "$VERSION" = '7' ]]; then
+            # for CentOS 7.x and excluding default mariadb 
+            # opting for mariadb official yum repo instead
+            if [[ ! `grep exclude /etc/yum.conf` ]]; then
+                echo "Can't find exclude line in /etc/yum.conf... adding exclude line for mariadb*"
+                echo "exclude=mariadb*">> /etc/yum.conf
+            fi
+        fi # VERSION = 7
+        
+        # set /etc/my.cnf templates
+        # setmycnf
+        
+        # only run for CentOS 6.x
+        if [[ "$VERSION" != '7' ]]; then
+            echo ""
+            echo "*************************************************"
+            echo "MariaDB 10.1.x YUM install..."
+            echo "yum -q -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared --disablerepo=epel"
+            echo "*************************************************"
+            echo ""
+            time yum -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared --disablerepo=epel
+            cp -a /etc/my.cnf /etc/my.cnf-newold
+        elif [[ "$VERSION" = '7' ]]; then
+            # run for CentOS 7.x
+            echo "time yum -q -y install perl-DBI"
+            time yum -q -y install perl-DBI
+        
+            echo ""
+            echo "*************************************************"
+            echo "MariaDB 10.1.x YUM install..."
+            echo "yum -q -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared"
+            echo "*************************************************"
+            echo ""
+            time yum -y install MariaDB-client MariaDB-common MariaDB-compat MariaDB-devel MariaDB-server MariaDB-shared
+            cp -a /etc/my.cnf /etc/my.cnf-newold
+        fi # VERSION != 7
+
         if [ $? != 0 ] ; then
-            echoRed "An error occured during installation of Mysql-server. Please fix this error and try again."
-            echoRed "You may want to manually run the command 'yum -y install mysql-server' to check. Aborting installation!"
+            echoRed "An error occured during installation of MariaDB-Server. Please fix this error and try again."
+            echoRed "Aborting installation!"
             exit 1
         fi
-        service mysqld start
+
+cat >> "/etc/my.cnf" <<FFF
+
+
+[mariadb-10.1]
+innodb_file_format = Barracuda
+innodb_file_per_table = 1
+
+## wsrep specific
+# wsrep_on=OFF
+# wsrep_provider
+# wsrep_cluster_address
+# binlog_format=ROW
+# default_storage_engine=InnoDB
+# innodb_autoinc_lock_mode=2
+# innodb_doublewrite=1
+# query_cache_size=0
+
+# 2 variables needed to switch from XtraDB to InnoDB plugins
+#plugin-load=ha_innodb
+#ignore_builtin_innodb
+
+## MariaDB 10 only save and restore buffer pool pages
+## warm up InnoDB buffer pool on server restarts
+innodb_buffer_pool_dump_at_shutdown=1
+innodb_buffer_pool_load_at_startup=1
+innodb_buffer_pool_populate=0
+## Disabled settings
+performance_schema=OFF
+innodb_stats_on_metadata=OFF
+innodb_sort_buffer_size=2M
+innodb_online_alter_log_max_size=128M
+query_cache_strip_comments=0
+log_slow_filter =admin,filesort,filesort_on_disk,full_join,full_scan,query_cache,query_cache_miss,tmp_table,tmp_table_on_disk
+
+# Defragmenting unused space on InnoDB tablespace
+innodb_defragment=1
+innodb_defragment_n_pages=7
+innodb_defragment_stats_accuracy=0
+innodb_defragment_fill_factor_n_recs=20
+innodb_defragment_fill_factor=0.9
+innodb_defragment_frequency=40
+FFF
+
+        sed -i 's/skip-pbxt/#skip-pbxt/g' /etc/my.cnf
+        sed -i 's/innodb_use_purge_thread = 4/innodb_purge_threads=1/g' /etc/my.cnf
+        sed -i 's/innodb_extra_rsegments/#innodb_extra_rsegments/g' /etc/my.cnf
+        sed -i 's/innodb_adaptive_checkpoint/innodb_adaptive_flushing_method/g' /etc/my.cnf
+        sed -i 's|ignore-db-dir|ignore_db_dirs|g' /etc/my.cnf
+        sed -i 's|^innodb_thread_concurrency|#innodb_thread_concurrency|g' /etc/my.cnf
+        sed -i 's|^skip-federated|#skip-federated|g' /etc/my.cnf
+        sed -i 's|^skip-pbxt|#skip-pbxt|g' /etc/my.cnf
+        sed -i 's|^skip-pbxt_statistics|#skip-pbxt_statistics|g' /etc/my.cnf
+        sed -i 's|^skip-archive|#skip-archive|g' /etc/my.cnf
+        sed -i 's|^innodb_buffer_pool_dump_at_shutdown|#innodb_buffer_pool_dump_at_shutdown|g' /etc/my.cnf
+        sed -i 's|^innodb_buffer_pool_load_at_startup|#innodb_buffer_pool_load_at_startup|g' /etc/my.cnf
+        service mysql start
     else
         apt-get -y -f --force-yes install mysql-server
         if [ $? != 0 ] ; then
