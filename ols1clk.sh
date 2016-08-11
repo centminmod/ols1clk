@@ -632,7 +632,11 @@ FFF
     
     #mysql_secure_installation
     #mysql_install_db
-    mysqladmin -u root password $ROOTPASSWORD
+    # mysqladmin -u root password $ROOTPASSWORD
+    mysql -e "DROP USER ''@'localhost';" >/dev/null 2>&1
+    mysql -e "DROP USER ''@'`hostname`';" >/dev/null 2>&1
+    mysql -e "DROP DATABASE test;" >/dev/null 2>&1
+    mysql -e "UPDATE mysql.user SET Password = PASSWORD('$ROOTPASSWORD') WHERE User = 'root'; FLUSH PRIVILEGES;" >/dev/null 2>&1
     if [ $? = 0 ] ; then
         echoGreen "Mysql root password set to $ROOTPASSWORD"
 cat > "/root/.my.cnf" <<EOF
@@ -730,7 +734,7 @@ function resetmysqlroot
 {
     MYSQLNAME=mysql
     if [ "x$ISCENTOS" = "x1" ] ; then
-        MYSQLNAME=mysqld
+        MYSQLNAME=mysql
     fi
     
     service $MYSQLNAME stop
