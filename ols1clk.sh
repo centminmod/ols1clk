@@ -363,7 +363,7 @@ function test_mysql_password
     TESTPASSWORDERROR=0
     
     #test it is the current password
-    mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
+    mysqladmin -uroot -p"${CURROOTPASSWORD}" password $CURROOTPASSWORD
     if [ $? != 0 ] ; then
         printf '\033[31mPlease input the current root password:\033[0m'
         read answer
@@ -632,7 +632,7 @@ FFF
     
     #mysql_secure_installation
     #mysql_install_db
-    # mysqladmin -u root password $ROOTPASSWORD
+    # mysqladmin -u root password "$ROOTPASSWORD"
     mysql -e "DROP USER ''@'localhost';" >/dev/null 2>&1
     mysql -e "DROP USER ''@'`hostname`';" >/dev/null 2>&1
     mysql -e "DROP DATABASE test;" >/dev/null 2>&1
@@ -646,7 +646,7 @@ password=$ROOTPASSWORD
 EOF
     else
         #test it is the current password
-        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
+        mysqladmin -uroot -p"${ROOTPASSWORD}" password "$ROOTPASSWORD"
         if [ $? = 0 ] ; then
             echoGreen "Mysql root password is $ROOTPASSWORD"
         else
@@ -674,7 +674,7 @@ EOF
                     echoGreen "OK, mysql root password not changed." 
                     ROOTPASSWORD=$CURROOTPASSWORD
                 else
-                    mysqladmin -u root -p$CURROOTPASSWORD password $ROOTPASSWORD
+                    mysqladmin -u root -p"${CURROOTPASSWORD}" password "$ROOTPASSWORD"
                     if [ $? = 0 ] ; then
                         echoGreen "OK, mysql root password changed to $ROOTPASSWORD."
                     else
@@ -693,16 +693,16 @@ function setup_mysql
     local ERROR=
 
     #delete user if exists because I need to set the password
-    echo "mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';""
-    mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 
+    echo "mysql -uroot -p${ROOTPASSWORD} -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';""
+    mysql -uroot -p"${ROOTPASSWORD}" -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 
     
-    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/null
+    echo `mysql -uroot -p"${ROOTPASSWORD}" -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/null
     if [ $? = 0 ] ; then
         echoGreen "user $USERNAME exists in mysql.user"
     else
-        mysql -uroot -p$ROOTPASSWORD  -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';"
+        mysql -uroot -p"${ROOTPASSWORD}" -e "CREATE USER $USERNAME@localhost IDENTIFIED BY '$USERPASSWORD';"
         if [ $? = 0 ] ; then
-            mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
+            mysql -uroot -p"${ROOTPASSWORD}" -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
         else
             echoRed "Failed to create mysql user $USERNAME. This user may already exist or a problem occured."
             echoRed "Please check this and update the wp-config.php file."
@@ -710,9 +710,9 @@ function setup_mysql
         fi
     fi
     
-    mysql -uroot -p$ROOTPASSWORD  -e "CREATE DATABASE IF NOT EXISTS $DATABASENAME;"
+    mysql -uroot -p"${ROOTPASSWORD}" -e "CREATE DATABASE IF NOT EXISTS $DATABASENAME;"
     if [ $? = 0 ] ; then
-        mysql -uroot -p$ROOTPASSWORD  -e "GRANT ALL PRIVILEGES ON $DATABASENAME.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
+        mysql -uroot -p"${ROOTPASSWORD}" -e "GRANT ALL PRIVILEGES ON $DATABASENAME.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
     else
         echoRed "Failed to create database $DATABASENAME. It may already exist or a problem occured."
         echoRed "Please check this and update the wp-config.php file."
@@ -722,7 +722,7 @@ function setup_mysql
             ERROR="$ERROR and create database error"
         fi  
     fi
-    mysql -uroot -p$ROOTPASSWORD  -e "flush privileges;"
+    mysql -uroot -p"${ROOTPASSWORD}" -e "flush privileges;"
    
     if [ "x$ERROR" = "x" ] ; then
         echoGreen "Finished mysql setup without error."
@@ -738,7 +738,7 @@ function resetmysqlroot
         MYSQLNAME=mysql
     fi
     
-    service $MYSQLNAME stop
+    service "$MYSQLNAME" stop
     
     DEFAULTPASSWD=$1
     
@@ -747,7 +747,7 @@ function resetmysqlroot
     #mysql --user=root mysql < /tmp/resetmysqlroot.sql
     mysql --user=root mysql -e "update user set Password=PASSWORD('$DEFAULTPASSWD') where user='root'; flush privileges; exit; "
     sleep 1            
-    service $MYSQLNAME restart
+    service "$MYSQLNAME" restart
 }
 
 function purgedatabase
@@ -771,8 +771,8 @@ function purgedatabase
         
 
         if [ "x$ERROR" = "x0" ] ; then
-            mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';"  
-            mysql -uroot -p$ROOTPASSWORD  -e "DROP DATABASE IF EXISTS $DATABASENAME;"
+            mysql -uroot -p"${ROOTPASSWORD}" -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';"  
+            mysql -uroot -p"${ROOTPASSWORD}" -e "DROP DATABASE IF EXISTS $DATABASENAME;"
             echoYellow "Database purged."
         fi
     fi
