@@ -693,9 +693,10 @@ function setup_mysql
     local ERROR=
 
     #delete user if exists because I need to set the password
+    echo "mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';""
     mysql -uroot -p$ROOTPASSWORD  -e "DELETE FROM mysql.user WHERE User = '$USERNAME@localhost';" 
     
-    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/nul
+    echo `mysql -uroot -p$ROOTPASSWORD -e "SELECT user FROM mysql.user"` | grep "$USERNAME" > /dev/null
     if [ $? = 0 ] ; then
         echoGreen "user $USERNAME exists in mysql.user"
     else
@@ -802,7 +803,7 @@ function install_ols
 function config_server
 {
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
-        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" > /dev/nul
+        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" > /dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
             VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
