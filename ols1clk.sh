@@ -510,6 +510,11 @@ function install_ols_centos
         else
             ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/phpdbg /usr/bin/lsphpdbg
         fi
+        # cmd shortcuts
+        echo "service lsws stop" >/usr/bin/lsstop ; chmod 700 /usr/bin/lsstop
+        echo "service lsws start" >/usr/bin/lsstart ; chmod 700 /usr/bin/lsstart
+        echo "service lsws restart" >/usr/bin/lsrestart ; chmod 700 /usr/bin/lsrestart
+        echo "service lsws reload" >/usr/bin/lsreload ; chmod 700 /usr/bin/lsreload
     fi
 }
 
