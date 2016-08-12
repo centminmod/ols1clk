@@ -9,7 +9,7 @@ ols1clk is a one-click installation script for OpenLiteSpeed. Using this script,
 Installing forked [centminmod](https://github.com/centminmod/ols1clk/tree/centminmod) branch for CentOS changes only; 
 --------
 
-Forked branch has following changes for CentOS 6 or CentOS 7 only:
+Forked branch has following changes for CentOS 6 or CentOS 7 only ported from my [Centmin Mod LEMP Project](https://centminmod.com):
 
 * switches from system `mysql-server` package to MariaDB official YUM repo based MariaDB 10.1 + Essential MariaDB MySQL Plugins
 * revise the mysql root user password setup (set /root/.my.cnf as well) and remove testing the mysql root user password
