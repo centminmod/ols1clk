@@ -1593,9 +1593,24 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     config_server
     
     if [ "x$WPPORT" = "x80" ] ; then
-        echoYellow "Trying to stop some web servers that may be using port 80."
-        killall -9 apache2  >  /dev/null 2>&1
-        killall -9 httpd    >  /dev/null 2>&1
+        if [ "x$ISCENTOS" = "x1" ] ; then
+            if [[ "$(rpm -ql httpd >/dev/null 2>&1; echo $?)" = '0' ]]; then
+                if [ -f /etc/init.d/httpd ]; then
+                    service httpd stop
+                    chkconfig httpd off
+                fi
+                if [[ "$(systemctl is-enabled httpd.service)" = 'enabled' ]]; then
+                    systemctl stop httpd.service
+                    systemctl disable httpd.service
+                else
+                    systemctl disable httpd.service
+                fi
+            fi
+        else
+            echoYellow "Trying to stop some web servers that may be using port 80."
+            killall -9 apache2  >  /dev/null 2>&1
+            killall -9 httpd    >  /dev/null 2>&1
+        fi
     fi
 fi
 
