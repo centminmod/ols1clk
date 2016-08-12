@@ -40,7 +40,9 @@ DATABASENAME=olsdbname
 USERNAME=olsdbuser
 USERPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
 WORDPRESSPATH=$SERVER_ROOT
+WORDPRESSWEBROOT="${WORDPRESSPATH}/wordpress"
 WPPORT=80
+ADMINPORT=7080
 EMAIL=root@localhost
 INSTALLWORDPRESS=0
 
@@ -55,11 +57,280 @@ ALLERRORS=0
 TEMPPASSWORD=
 PASSWORDPROVIDE=
 
+# other variables
+DIR_TMP=/svr-setup
+# disable firewalld in favour of csf on centos 7
+FIREWALLD_DISABLE='y'
+CSF_LINKFILE="csf.tgz"
+CSF_LINK="http://download.configserver.com/${CSF_LINKFILE}"
+
+if [ ! -d "$DIR_TMP" ]; then
+  mkdir -p "$DIR_TMP"
+fi
+
 if [ -f "${MYSQLEXTRA_FILE}" ]; then
   MYSQLOPT=" --defaults-extra-file=${MYSQLEXTRA_FILE}"
 else
   MYSQLOPT=" -uroot -p$ROOTPASSWORD"
 fi
+
+csf_install() {
+    local VERSION=
+    if [ "x$OSVER" = "xCENTOS5" ] ; then
+        VERSION=5
+    elif [ "x$OSVER" = "xCENTOS6" ] ; then
+        VERSION=6
+    else #if [ "x$OSVER" = "xCENTOS7" ] ; then
+        VERSION=7
+    fi
+
+    cd "$DIR_TMP"
+    wget -cnv "$CSF_LINK"
+    tar -xvzf "$CSF_LINKFILE"
+
+    if [[ $(rpm -q perl-Crypt-SSLeay >/dev/null 2>&1; echo $?) != '0' ]] || [[ $(rpm -q perl-Net-SSLeay >/dev/null 2>&1; echo $?) != '0' ]]; then
+        yum -y install perl-libwww-perl perl-Crypt-SSLeay perl-Net-SSLeay
+    elif [[ -z "$(rpm -qa perl-libwww-perl)" ]]; then
+        yum -y install perl-libwww-perl
+    fi
+    if [[ "$VERSION" = '7' ]]; then
+        if [[ $(rpm -q perl-LWP-Protocol-https >/dev/null 2>&1; echo $?) != '0' ]]; then
+            yum -y install perl-LWP-Protocol-https
+        fi
+    fi
+
+    #tar xzf csf.tgz
+    cd "$DIR_TMP/csf"
+    sh install.sh
+
+    # echo "Test IP Tables Modules..."
+
+    # perl /etc/csf/csftest.pl
+    cp -a /etc/csf/csf.conf /etc/csf/csf.conf-bak
+
+    echo "CSF ports to csf.allow list..."
+    sed -i 's/20,21,22,25,53,80,110,143,443,465,587,993,995/20,21,22,25,53,80,110,143,161,443,465,587,993,995,1110,1186,1194,2049,3000,3334,8080,8888,81,9312,9418,6081,6082,30865,30001:50011/g' /etc/csf/csf.conf
+
+sed -i "s/TCP_OUT = \"/TCP_OUT = \"993,995,465,587,1110,1194,9418,/g" /etc/csf/csf.conf
+sed -i "s/TCP6_OUT = \"/TCP6_OUT = \"993,995,465,587,/g" /etc/csf/csf.conf
+sed -i "s/UDP_IN = \"/UDP_IN = \"67,68,1110,33434:33534,/g" /etc/csf/csf.conf
+sed -i "s/UDP_OUT = \"/UDP_OUT = \"67,68,1110,33434:33534,/g" /etc/csf/csf.conf
+sed -i "s/DROP_NOLOG = \"67,68,/DROP_NOLOG = \"/g" /etc/csf/csf.conf
+
+    egrep '^UDP_|^TCP_|^DROP_NOLOG' /etc/csf/csf.conf
+
+    # auto detect which SSHD port is default and auto update it for base
+    # csf firewall template
+    CSFSSHD_PORT='22'
+    DETECTED_PORT=$(awk '/^Port / {print $2}' /etc/ssh/sshd_config)
+    if [[ "$DETECTED_PORT" != '22' && -z "$(netstat -plant | grep sshd | grep ':22')" ]]; then
+      echo "switching csf.conf SSHD port default from $CSFSSHD_PORT to detected SSHD port $DETECTED_PORT"
+      sed -i "s/,${CSFSSHD_PORT},/,${DETECTED_PORT},/" /etc/csf/csf.conf
+    fi
+    if [[ "$(cat /etc/csf/csf.conf | grep TCP_IN | grep ',,')" ]] && [[ "$(netstat -plant | grep sshd | grep ":${CSFSSHD_PORT}")" ]]; then
+      echo "correct bug that removed $CSFSSHD_PORT in CSF firewall TCP_IN entry"
+      echo "https://community.centminmod.com/posts/34444/"
+      sed -i "s/\,\,/,${CSFSSHD_PORT},/" /etc/csf/csf.conf
+    fi
+    
+    echo "Disabling CSF Testing mode (activates firewall)..."
+    sed -i 's/TESTING = "1"/TESTING = "0"/g' /etc/csf/csf.conf
+
+    sed -i 's|USE_CONNTRACK = "1"|USE_CONNTRACK = "0"|g' /etc/csf/csf.conf
+    sed -i 's/LF_IPSET = "0"/LF_IPSET = "1"/g' /etc/csf/csf.conf
+    sed -i 's/LF_DSHIELD = "0"/LF_DSHIELD = "86400"/g' /etc/csf/csf.conf
+    sed -i 's/LF_SPAMHAUS = "0"/LF_SPAMHAUS = "86400"/g' /etc/csf/csf.conf
+    sed -i 's/LF_EXPLOIT = "300"/LF_EXPLOIT = "86400"/g' /etc/csf/csf.conf
+    sed -i 's/LF_DIRWATCH = "300"/LF_DIRWATCH = "86400"/g' /etc/csf/csf.conf
+    sed -i 's/LF_INTEGRITY = "3600"/LF_INTEGRITY = "0"/g' /etc/csf/csf.conf
+    sed -i 's/LF_PARSE = "5"/LF_PARSE = "20"/g' /etc/csf/csf.conf
+    sed -i 's/LF_PARSE = "600"/LF_PARSE = "20"/g' /etc/csf/csf.conf
+    sed -i 's/PS_LIMIT = "10"/PS_LIMIT = "15"/g' /etc/csf/csf.conf
+    sed -i 's/PT_LIMIT = "60"/PT_LIMIT = "0"/g' /etc/csf/csf.conf
+    sed -i 's/PT_USERPROC = "10"/PT_USERPROC = "0"/g' /etc/csf/csf.conf
+    sed -i 's/PT_USERMEM = "200"/PT_USERMEM = "0"/g' /etc/csf/csf.conf
+    sed -i 's/PT_USERTIME = "1800"/PT_USERTIME = "0"/g' /etc/csf/csf.conf
+    sed -i 's/PT_LOAD = "30"/PT_LOAD = "600"/g' /etc/csf/csf.conf
+    sed -i 's/PT_LOAD_AVG = "5"/PT_LOAD_AVG = "15"/g' /etc/csf/csf.conf
+    sed -i 's/PT_LOAD_LEVEL = "6"/PT_LOAD_LEVEL = "8"/g' /etc/csf/csf.conf
+    sed -i 's/LF_FTPD = "10"/LF_FTPD = "3"/g' /etc/csf/csf.conf
+
+    sed -i 's/LF_DISTATTACK = "0"/LF_DISTATTACK = "1"/g' /etc/csf/csf.conf
+    sed -i 's/LF_DISTFTP = "0"/LF_DISTFTP = "1"/g' /etc/csf/csf.conf
+    sed -i 's/LF_DISTFTP_UNIQ = "3"/LF_DISTFTP_UNIQ = "6"/g' /etc/csf/csf.conf
+    sed -i 's/LF_DISTFTP_PERM = "3600"/LF_DISTFTP_PERM = "6000"/g' /etc/csf/csf.conf
+
+    # enable CSF support of dynamic DNS
+    # add your dynamic dns hostnames to /etc/csf/csf.dyndns and restart CSF
+    # https://community.centminmod.com/threads/csf-firewall-info.25/page-2#post-10687
+    sed -i 's/DYNDNS = \"0\"/DYNDNS = \"300\"/' /etc/csf/csf.conf
+    sed -i 's/DYNDNS_IGNORE = \"0\"/DYNDNS_IGNORE = \"1\"/' /etc/csf/csf.conf
+
+    if [[ ! -f /proc/user_beancounters ]] && [[ "$(uname -r | grep linode)" || "$(find /lib/modules/`uname -r` -name 'ipset')" ]]; then
+        if [[ ! -f /usr/sbin/ipset ]]; then
+            # CSF now has ipset support to offload large IP address numbers 
+            # from iptables so uses less server resources to handle many IPs
+            # does not work with OpenVZ VPS so only implement for non-OpenVZ
+            yum -q -y install ipset ipset-devel
+            sed -i 's/LF_IPSET = \"0\"/LF_IPSET = \"1\"/' /etc/csf/csf.conf
+            sed -i 's/DENY_IP_LIMIT = \"100\"/DENY_IP_LIMIT = \"3000\"/' /etc/csf/csf.conf
+            sed -i 's/DENY_TEMP_IP_LIMIT = \"100\"/DENY_TEMP_IP_LIMIT = \"3000\"/' /etc/csf/csf.conf
+        elif [[ -f /usr/sbin/ipset ]]; then
+            sed -i 's/LF_IPSET = \"0\"/LF_IPSET = \"1\"/' /etc/csf/csf.conf
+            sed -i 's/DENY_IP_LIMIT = \"100\"/DENY_IP_LIMIT = \"3000\"/' /etc/csf/csf.conf
+            sed -i 's/DENY_TEMP_IP_LIMIT = \"100\"/DENY_TEMP_IP_LIMIT = \"3000\"/' /etc/csf/csf.conf
+        fi
+    else
+        sed -i 's/LF_IPSET = \"1\"/LF_IPSET = \"0\"/' /etc/csf/csf.conf
+        sed -i 's/DENY_IP_LIMIT = \"100\"/DENY_IP_LIMIT = \"200\"/' /etc/csf/csf.conf
+        sed -i 's/DENY_TEMP_IP_LIMIT = \"100\"/DENY_TEMP_IP_LIMIT = \"200\"/' /etc/csf/csf.conf
+    fi
+
+    sed -i 's/UDPFLOOD = \"0\"/UDPFLOOD = \"1\"/g' /etc/csf/csf.conf
+    sed -i 's/UDPFLOOD_ALLOWUSER = \"named\"/UDPFLOOD_ALLOWUSER = \"named nsd\"/g' /etc/csf/csf.conf
+
+    # whitelist the SSH client IP from initial installation to prevent some
+    # instances of end user IP being blocked from CSF Firewall
+        CMUSER_SSHCLIENTIP=$(echo $SSH_CLIENT | awk '{print $1}' | head -n1)
+        csf -a $CMUSER_SSHCLIENTIP # initialinstall_userip
+        echo "$CMUSER_SSHCLIENTIP" >> /etc/csf/csf.ignore
+
+#######################################################
+# check to see if csf.pignore already has custom apps added
+
+CSFPIGNORECHECK=`grep -E '(user:nginx|user:nsd|exe:/usr/local/bin/memcached)' /etc/csf/csf.pignore`
+
+if [[ -z $CSFPIGNORECHECK ]]; then
+
+    echo "Adding Applications/Users to CSF ignore list..."
+cat >>/etc/csf/csf.pignore<<EOF
+pexe:/usr/local/lsws/bin/lshttpd.*
+pexe:/usr/local/lsws/fcgi-bin/lsphp.*
+exe:/usr/local/bin/memcached
+cmd:/usr/local/bin/memcached
+user:mysql
+exe:/usr/sbin/mysqld 
+cmd:/usr/sbin/mysqld
+user:varnish
+exe:/usr/sbin/varnishd
+cmd:/usr/sbin/varnishd
+exe:/sbin/portmap
+cmd:portmap
+exe:/usr/libexec/gdmgreeter
+cmd:/usr/libexec/gdmgreeter
+exe:/usr/sbin/avahi-daemon
+cmd:avahi-daemon
+exe:/sbin/rpc.statd
+cmd:rpc.statd
+exe:/usr/libexec/hald-addon-acpi
+cmd:hald-addon-acpi
+user:nsd
+user:nginx
+user:ntp
+user:dbus
+user:smmsp
+user:postfix
+user:dovecot
+user:www-data
+user:spamfilter
+exe:/usr/libexec/dovecot/imap
+exe:/usr/libexec/dovecot/pop3
+exe:/usr/libexec/dovecot/anvil
+exe:/usr/libexec/dovecot/auth
+exe:/usr/libexec/dovecot/pop3-login
+exe:/usr/libexec/dovecot/imap-login
+exe:/usr/libexec/postfix
+exe:/usr/libexec/postfix/bounce
+exe:/usr/libexec/postfix/discard
+exe:/usr/libexec/postfix/error
+exe:/usr/libexec/postfix/flush
+exe:/usr/libexec/postfix/local
+exe:/usr/libexec/postfix/smtp
+exe:/usr/libexec/postfix/smtpd
+exe:/usr/libexec/postfix/pickup
+exe:/usr/libexec/postfix/tlsmgr
+exe:/usr/libexec/postfix/qmgr
+exe:/usr/libexec/postfix/virtual
+exe:/usr/libexec/postfix/proxymap
+exe:/usr/libexec/postfix/anvil
+exe:/usr/libexec/postfix/lmtp
+exe:/usr/libexec/postfix/scache
+exe:/usr/libexec/postfix/cleanup
+exe:/usr/libexec/postfix/trivial-rewrite
+exe:/usr/libexec/postfix/master
+EOF
+
+fi # check to see if csf.pignore already has custom apps added
+
+    csf -u
+    chkconfig csf on
+    service csf restart
+    csf -r
+
+    chkconfig lfd on
+    service lfd start
+
+# if CentOS 7 is detected disable firewalld in favour 
+# of csf iptables ip6tables for now
+if [[ "$VERSION" = '7' ]]; then
+    if [[ "$FIREWALLD_DISABLE" = [yY] ]]; then
+        # disable firewalld
+        systemctl disable firewalld
+        systemctl stop firewalld
+    
+        # install iptables-services package
+        yum -y install iptables-services
+    
+        # start iptables and ip6tables services
+        systemctl start iptables
+        systemctl start ip6tables
+        systemctl enable iptables
+        systemctl enable ip6tables
+    else
+        # leave firewalld enabled
+        # disable CSF firewall instead
+        service csf stop
+        service lfd stop
+        chkconfig csf off
+        chkconfig lfd off
+
+        # as CSF Firewall is disabled
+        # need to setup firewalld permanent
+        # services for default public zone
+        firewall-cmd --permanent --zone=public --add-service=dns
+        firewall-cmd --permanent --zone=public --add-service=ftp
+        firewall-cmd --permanent --zone=public --add-service=http
+        firewall-cmd --permanent --zone=public --add-service=https
+        firewall-cmd --permanent --zone=public --add-service=imaps
+        firewall-cmd --permanent --zone=public --add-service=mysql
+        firewall-cmd --permanent --zone=public --add-service=pop3s
+        firewall-cmd --permanent --zone=public --add-service=smtp
+        firewall-cmd --permanent --zone=public --add-service=openvpn
+        firewall-cmd --permanent --zone=public --add-service=nfs
+
+        # firewall-cmd --reload
+        systemctl restart firewalld
+        firewall-cmd --zone=public --list-services
+
+        # custom ports allowed if detected SSHD default port is not 22, ensure the custom SSHD port
+        # number is whitelisted by firewalld
+        FWDDETECTED_PORT=$(awk '/^Port / {print $2}' /etc/ssh/sshd_config)
+        if [[ "$FWDDETECTED_PORT" = '22' ]]; then
+          FIREWALLD_PORTS='1186 1194 8080 8888 81 9000 9001 9312 9418 10000 10500 10501 6081 6082 30865 3000-3050'
+        else
+          FIREWALLD_PORTS="$FWDDETECTED_PORT 1186 1194 8080 8888 81 9000 9001 9312 9418 10000 10500 10501 6081 6082 30865 3000-3050"
+        fi
+
+        for fp in $FIREWALLD_PORTS
+          do
+            firewall-cmd --permanent --zone=public --add-port=${fp}/tcp
+        done
+
+        firewall-cmd --reload
+        firewall-cmd --zone=public --list-ports
+    fi
+fi
+}
 
 echoYellow()
 {
@@ -1155,7 +1426,7 @@ if [ "x$OLSINSTALLED" = "x1" ] ; then
     echoYellow "OpenLiteSpeed is already installed, will attempt to update it."
 fi
 install_ols
-
+csf_install
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
@@ -1193,7 +1464,11 @@ echoYellow "Please be aware that your password was written to file '$SERVER_ROOT
 
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
+    echoGreen "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
+    echoGreen "Please access http://localhost:$ADMINPORT/ for admin console."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+        echoGreen "Wordpress site vhost file at $VHOSTCONF"
+        echoGreen "Wordpress web root at ${WORDPRESSPATH}/wordpress"
         echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
         echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
     fi
