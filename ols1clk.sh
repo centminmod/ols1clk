@@ -482,7 +482,7 @@ function install_ols_centos
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed
     yum -y install epel-release
-    yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader --exclude=--exclude=lsphp$LSPHPVER-pecl-redis --exclude=lsphp$LSPHPVER-pecl-igbinary*
+    yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader --exclude=--exclude=lsphp$LSPHPVER-pecl-redis --exclude=lsphp$LSPHPVER-pecl-igbinary* --exclude=lsphp$LSPHPVER-dbg
 
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
@@ -1601,6 +1601,7 @@ echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
 echoYellow "Please be aware that your password was written to file '$SERVER_ROOT/password'." 
 
 if [ "x$ALLERRORS" = "x0" ] ; then
+    echo
     echoGreen "Congratulations! Installation finished."
     echoGreen "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
     echoGreen "PHP php.ini file at /usr/local/lsws/php/php.ini"
