@@ -482,13 +482,34 @@ function install_ols_centos
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed
     yum -y install epel-release
-    yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader
+    yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader --exclude=--exclude=lsphp$LSPHPVER-pecl-redis
 
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
         ALLERRORS=1
     else
+        echo "ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5"
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphp5
+        if [ ! -f /usr/bin/php ]; then
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/php /usr/bin/php
+        else
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/php /usr/bin/lsphp
+        fi
+        if [ ! -f /usr/bin/php-config ]; then
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/php-config /usr/bin/php-config
+        else
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/php-config /usr/bin/lsphp-config
+        fi
+        if [ ! -f /usr/bin/phpize ]; then
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/phpize /usr/bin/phpize
+        else
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/phpize /usr/bin/lsphpize
+        fi
+        if [ ! -f /usr/bin/phpdbg ]; then
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/phpdbg /usr/bin/phpdbg
+        else
+            ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/phpdbg /usr/bin/lsphpdbg
+        fi
     fi
 }
 
@@ -516,7 +537,8 @@ function uninstall_ols_centos
     fi
     
     if [ "x$LSPHPVER" != "x" ] ; then
-        yum -y remove lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-mysql$ND lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap
+        yum -y remove lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader
+
         if [ $? != 0 ] ; then
             echoRed "An error occured while uninstalling openlitespeed."
             ALLERRORS=1
@@ -1581,6 +1603,8 @@ echoYellow "Please be aware that your password was written to file '$SERVER_ROOT
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
     echoGreen "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
+    echoGreen "PHP php.ini file at /usr/local/lsws/php/php.ini"
+    echoGreen "PHP Config Scan Dir at /usr/local/lsws/lsphp$LSPHPVER/etc/php.d/""
     echoGreen "Please access http://localhost:$ADMINPORT/ for admin console with password = $ADMINPASSWORD."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoGreen "Wordpress site vhost file at $VHOSTCONF"
@@ -1589,6 +1613,19 @@ if [ "x$ALLERRORS" = "x0" ] ; then
         echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
         echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
     fi
+    echo
+    echoGreen "OLS Version Installed:"
+    /usr/local/lsws/bin/openlitespeed --version
+
+    echo
+    echoGreen "PHPV Version Installed:"
+    /usr/bin/php -v
+
+    echo
+    echoGreen "MariaDB 10.1 Installed:"
+    $(which rpm) -qa | grep -i MariaDB
+
+    echo
 else
     echoYellow "Installation finished. It seems some errors occured, please check this as you may need to manually fix them."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
