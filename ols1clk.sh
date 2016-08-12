@@ -1426,7 +1426,9 @@ if [ "x$OLSINSTALLED" = "x1" ] ; then
     echoYellow "OpenLiteSpeed is already installed, will attempt to update it."
 fi
 install_ols
-csf_install
+if [ "x$ISCENTOS" = "x1" ] ; then
+  csf_install
+fi
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
