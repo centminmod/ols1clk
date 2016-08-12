@@ -6,6 +6,19 @@ Description
 
 ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-w** parameter that will install WordPress at the same time. An openmysql database can also be set up using this script if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** param.
 
+Installing forked [centminmod](https://github.com/centminmod/ols1clk/tree/centminmod) branch
+--------
+
+    git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
+    cd ols1clk
+    ./ols1clk.sh -e youremail@domain.com
+
+If want to install Wordpress
+
+    git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
+    cd ols1clk
+    ./ols1clk.sh -e youremail@domain.com -w -d WPDATABASENAME -u WPUSERNAME
+
 Running ols1clk
 --------
 
