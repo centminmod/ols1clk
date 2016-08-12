@@ -6,10 +6,10 @@ Description
 
 ols1clk is a one-click installation script for OpenLiteSpeed. Using this script, you can quickly and easily install OpenLiteSpeed with it’s default settings. We also provide a **-w** parameter that will install WordPress at the same time. An openmysql database can also be set up using this script if needed. If you already have a WordPress installation running on another server, it can be imported into OpenLiteSpeed with no hassle using the **--wordpresspath** param.
 
-Installing forked [centminmod](https://github.com/centminmod/ols1clk/tree/centminmod) branch; 
+Installing forked [centminmod](https://github.com/centminmod/ols1clk/tree/centminmod) branch for CentOS changes only; 
 --------
 
-Forked branch has following changes:
+Forked branch has following changes for CentOS 6 or CentOS 7 only:
 
 * switches from system `mysql-server` package to MariaDB official YUM repo based MariaDB 10.1 + Essential MariaDB MySQL Plugins
 * revise the mysql root user password setup (set /root/.my.cnf as well) and remove testing the mysql root user password
