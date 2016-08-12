@@ -1604,7 +1604,7 @@ if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
     echoGreen "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
     echoGreen "PHP php.ini file at /usr/local/lsws/php/php.ini"
-    echoGreen "PHP Config Scan Dir at /usr/local/lsws/lsphp$LSPHPVER/etc/php.d/""
+    echoGreen "PHP Config Scan Dir at /usr/local/lsws/lsphp$LSPHPVER/etc/php.d/"
     echoGreen "Please access http://localhost:$ADMINPORT/ for admin console with password = $ADMINPASSWORD."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoGreen "Wordpress site vhost file at $VHOSTCONF"
