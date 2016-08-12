@@ -1636,7 +1636,11 @@ if [ "x$ALLERRORS" = "x0" ] ; then
     fi
     echo
     echoGreen "OLS Version Installed:"
-    /usr/local/lsws/bin/openlitespeed --version
+    if [ -f /usr/local/lsws/modules/modpagespeed.so ]; then
+        echo "$(/usr/local/lsws/bin/openlitespeed --version) with modpagespeed $(strings /usr/local/lsws/modules/modpagespeed.so | awk -F "/" '/\/home\/buildbot\/build\// {print $5}' | uniq)"
+    else
+        echo "$(/usr/local/lsws/bin/openlitespeed --version) without modpagespeed"
+    fi
 
     echo
     echoGreen "PHPV Version Installed:"
