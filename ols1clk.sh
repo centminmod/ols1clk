@@ -35,6 +35,7 @@ RAND3=$RANDOM
 DATE=`date`
 ADMINPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
 ROOTPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
+MYSQLEXTRA_FILE='/root/.my.cnf'
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
 USERPASSWORD=$(echo "$(openssl rand 12 -base64)$(openssl rand 6 -base64)" | sed -e s'|/||g' -e 's|+||g')
@@ -54,10 +55,10 @@ ALLERRORS=0
 TEMPPASSWORD=
 PASSWORDPROVIDE=
 
-if [ -z "$ROOTPASSWORD" ]; then
-    MYSQLOPT=""
+if [ -f "${MYSQLEXTRA_FILE}" ]; then
+  MYSQLOPT=" --defaults-extra-file=${MYSQLEXTRA_FILE}"
 else
-    MYSQLOPT=" -uroot -p$ROOTPASSWORD"
+  MYSQLOPT=" -uroot -p$ROOTPASSWORD"
 fi
 
 echoYellow()
