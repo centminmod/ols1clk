@@ -18,6 +18,7 @@
 ##############################################################################
 
 ###    Author: dxu@litespeedtech.com (David Shue)
+###    Modifications: George Liu (centminmod.com)
 
 OSVER=UNKNOWN
 OSTYPE=`uname -m`
