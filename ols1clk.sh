@@ -482,7 +482,7 @@ function install_ols_centos
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
     yum -y install openlitespeed
     yum -y install epel-release
-    yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader --exclude=lsphp$LSPHPVER-pecl-redis --exclude=lsphp$LSPHPVER-pecl-igbinary* --exclude=lsphp$LSPHPVER-dbg
+    yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader --exclude=lsphp$LSPHPVER-dbg
 
     if [ $? != 0 ] ; then
         echoRed "An error occured during openlitespeed installation."
@@ -1608,8 +1608,8 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
             fi
         else
             echoYellow "Trying to stop some web servers that may be using port 80."
-            killall -9 apache2  >  /dev/null 2>&1
-            killall -9 httpd    >  /dev/null 2>&1
+            killall -9 apache2  >/dev/null 2>&1
+            killall -9 httpd    >/dev/null 2>&1
         fi
     fi
 fi
