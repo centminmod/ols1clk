@@ -1580,10 +1580,11 @@ echoYellow "Please be aware that your password was written to file '$SERVER_ROOT
 if [ "x$ALLERRORS" = "x0" ] ; then
     echoGreen "Congratulations! Installation finished."
     echoGreen "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
-    echoGreen "Please access http://localhost:$ADMINPORT/ for admin console."
+    echoGreen "Please access http://localhost:$ADMINPORT/ for admin console with password = $ADMINPASSWORD."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoGreen "Wordpress site vhost file at $VHOSTCONF"
         echoGreen "Wordpress web root at ${WORDPRESSPATH}/wordpress"
+        echoGreen "Wordpress $DATABASENAME with username: $USERNAME password: $USERPASSWORD"
         echoGreen "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
         echoGreen "And also you may want to activate Litespeed Cache plugin to get better performance."
     fi
