@@ -27,7 +27,7 @@ Install with PHP 7.x
 
     git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com --lsphpversion 70 -l 81
+    ./ols1clk.sh -e youremail@domain.com --lsphpversion 70
 
 If want to install Wordpress
 
@@ -39,7 +39,7 @@ If want to install Wordpress and listen on port 81
 
     git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com -w -d WPDATABASENAME -u WPUSERNAME
+    ./ols1clk.sh -e youremail@domain.com -w -d WPDATABASENAME -u WPUSERNAME -l 81
 
 Running ols1clk
 --------
