@@ -101,7 +101,7 @@ csf_install() {
     fi
 
     #tar xzf csf.tgz
-    cd "$DIR_TMP/csf"
+    cd $DIR_TMP/csf
     sh install.sh
 
     # echo "Test IP Tables Modules..."
@@ -1700,7 +1700,9 @@ echoYellow "Please be aware that your password was written to file '$SERVER_ROOT
 
 if [ "x$ALLERRORS" = "x0" ] ; then
     echo
+    echoYellow "------------------------------------------------------------------------------"
     echoGreen "Congratulations! Installation finished."
+    echoYellow "------------------------------------------------------------------------------"
     echoGreen "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
     echoGreen "PHP php.ini file at /usr/local/lsws/php/php.ini"
     echoGreen "PHP Config Scan Dir at /usr/local/lsws/lsphp$LSPHPVER/etc/php.d/"
