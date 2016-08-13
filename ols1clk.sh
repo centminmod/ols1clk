@@ -733,6 +733,81 @@ mariadbplugins() {
 
 function install_mysql
 {
+    if [ "x$ISCENTOS" = "x1" ] ; then
+        yum -y install mysql-server
+        if [ $? != 0 ] ; then
+            echoRed "An error occured during installation of Mysql-server. Please fix this error and try again."
+            echoRed "You may want to manually run the command 'yum -y install mysql-server' to check. Aborting installation!"
+            exit 1
+        fi
+        service mysqld start
+    else
+        apt-get -y -f --force-yes install mysql-server
+        if [ $? != 0 ] ; then
+            echoRed "An error occured during installation of Mysql-server. Please fix this error and try again."
+            echoRed "You may want to manually run the command 'apt-get -y -f --force-yes install mysql-server' to check. Aborting installation!"
+            exit 1
+        fi
+        #mysqld start
+        service mysql start
+    fi
+    
+    if [ $? != 0 ] ; then
+        echoRed "An error occured during starting service of Mysql-server. "
+        echoRed "Please fix this error and try again. Aborting installation!"
+        exit 1
+    fi
+    
+    #mysql_secure_installation
+    #mysql_install_db
+    mysqladmin -u root password $ROOTPASSWORD
+    if [ $? = 0 ] ; then
+        echoGreen "Mysql root password set to $ROOTPASSWORD"
+    else
+        #test it is the current password
+        mysqladmin -uroot -p$ROOTPASSWORD password $ROOTPASSWORD
+        if [ $? = 0 ] ; then
+            echoGreen "Mysql root password is $ROOTPASSWORD"
+        else
+            echoRed "Failed to set Mysql root password to $ROOTPASSWORD, it may already have a root password."
+            printf '\033[31mInstallation must know the password for the next step settings.\033[0m'
+            test_mysql_password
+            
+            if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
+                echoYellow "If you forget your password you may stop the mysqld service and run the following command to reset it,"
+                echoYellow "mysqld_safe --skip-grant-tables &"
+                echoYellow "mysql --user=root mysql"
+                echoYellow "update user set Password=PASSWORD('new-password') where user='root'; flush privileges; exit; "
+                echoRed "Aborting installation."
+                echo
+                exit 1
+            fi
+        
+            if [ "x$CURROOTPASSWORD" != "x$ROOTPASSWORD" ] ; then
+                echoYellow "Current mysql root password is $CURROOTPASSWORD, it will be changed to $ROOTPASSWORD."
+                printf '\033[31mDo you still want to change it?[y/N]\033[0m '
+                read answer
+                echo
+
+                if [ "x$answer" != "xY" ] && [ "x$answer" != "xy" ] ; then
+                    echoGreen "OK, mysql root password not changed." 
+                    ROOTPASSWORD=$CURROOTPASSWORD
+                else
+                    mysqladmin -u root -p$CURROOTPASSWORD password $ROOTPASSWORD
+                    if [ $? = 0 ] ; then
+                        echoGreen "OK, mysql root password changed to $ROOTPASSWORD."
+                    else
+                        echoRed "Failed to change mysql root password, it is still $CURROOTPASSWORD."
+                        ROOTPASSWORD=$CURROOTPASSWORD
+                    fi
+                fi
+            fi
+        fi
+    fi
+}
+
+install_mariadb() {
+{
     local VERSION=
     if [ "x$OSVER" = "xCENTOS5" ] ; then
         VERSION=5
@@ -1573,7 +1648,11 @@ fi
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
-        install_mysql
+        if [ "x$ISCENTOS" = "x1" ] ; then
+            install_mariadb
+        else
+            install_mysql
+        fi
     else
         test_mysql_password
     fi    
