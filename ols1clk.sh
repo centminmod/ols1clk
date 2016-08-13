@@ -807,7 +807,6 @@ function install_mysql
 }
 
 install_mariadb() {
-{
     local VERSION=
     if [ "x$OSVER" = "xCENTOS5" ] ; then
         VERSION=5
