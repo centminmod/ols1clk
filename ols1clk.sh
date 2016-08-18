@@ -54,7 +54,7 @@ WPPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
 WPUSER=wpuser
 WPTITLE=MySite
 
-SITEDOMAIN=mydomain.com
+SITEDOMAIN=*
 EMAIL=
 
 #All lsphp versions, keep using two digits to identify a version!!!
@@ -1333,7 +1333,7 @@ setUIDMode              2
 listener wordpress {
 address                 *:$WPPORT
 secure                  0
-map                     wordpress *
+map                     wordpress $SITEDOMAIN
 }
 
 
@@ -1638,7 +1638,11 @@ if [ "x$OSVER" = "xCENTOS5" ] ; then
 fi
 
 if [ "x$EMAIL" = "x" ] ; then
-    EMAIL=root@$SITEDOMAIN
+    if [ "x$SITEDOMAIN" = "x*" ] ; then
+        EMAIL=root@localhost
+    else
+        EMAIL=root@$SITEDOMAIN
+    fi
 fi
 
 readPassword "$ADMINPASSWORD" "webAdmin password"
@@ -1667,15 +1671,14 @@ WORDPRESSINSTALLED=
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     echoY "Install wordpress:        " Yes
     echoY "WordPress listenport:     " "$WPPORT"
+    echoY "Web site domain:          " "$SITEDOMAIN"
     
     if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
-    
         echoY "Wordpress plus:           " Yes
         echoY "Wordpress language:       " "$WPLANGUAGE"
         echoY "Wordpress site title:     " "$WPTITLE"
         echoY "Wordpress username:       " "$WPUSER"
         echoY "Wordpress password:       " "$WPPASSWORD"
-        echoY "Web site domain:          " "$SITEDOMAIN"
     else
         echoY "Wordpress plus:           " No
     fi
