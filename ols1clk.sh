@@ -29,7 +29,8 @@ ISCENTOS=
 OLSINSTALLED=
 MYSQLINSTALLED=
 
-#Generate webAdmin and mysql root password randomly
+#Generate the passwords randomly
+
 RAND1=$RANDOM
 RAND2=$RANDOM
 RAND3=$RANDOM
@@ -50,7 +51,7 @@ INSTALLWORDPRESS=0
 INSTALLWORDPRESSPLUS=0
 
 WPLANGUAGE=en
-WPPASSWORD=`echo "$RAND3$DATE" |  md5sum | base64 | head -c 8`
+WPPASSWORD=`echo "$RAND4$DATE" |  md5sum | base64 | head -c 8`
 WPUSER=wpuser
 WPTITLE=MySite
 
@@ -66,11 +67,15 @@ LSPHPVER=56
 
 ALLERRORS=0
 TEMPPASSWORD=
-PASSWORDPROVIDE=
+
+ACTION=INSTALL
+FOLLOWPARAM=
 
 echoY()
 {
-    echo -e "\033[38;5;148m$@\033[39m"
+    FLAG=$1
+    shift
+    echo -e "\033[38;5;148m$FLAG\033[39m$@"
 }
 
 echoG()
@@ -374,7 +379,7 @@ function check_root
 
 function check_wget
 {
-    which wget  > /dev/null 2>&1
+    which wget  >/dev/null 2>&1
     if [ $? != 0 ] ; then
         if [ "x$ISCENTOS" = "x1" ] ; then
             yum -y install wget
@@ -382,7 +387,7 @@ function check_wget
             apt-get -y install wget
         fi
     
-        which wget  > /dev/null 2>&1
+        which wget  >/dev/null 2>&1
         if [ $? != 0 ] ; then
             echoR "An error occured during wget installation."
             ALLERRORS=1
@@ -404,17 +409,17 @@ function check_os
     ISCENTOS=0
     
     if [ -f /etc/redhat-release ] ; then
-        cat /etc/redhat-release | grep " 5." > /dev/null
+        cat /etc/redhat-release | grep " 5." >/dev/null
         if [ $? = 0 ] ; then
             OSVER=CENTOS5
             ISCENTOS=1
         else
-            cat /etc/redhat-release | grep " 6." > /dev/null
+            cat /etc/redhat-release | grep " 6." >/dev/null
             if [ $? = 0 ] ; then
                 OSVER=CENTOS6
                 ISCENTOS=1
             else
-                cat /etc/redhat-release | grep " 7." > /dev/null
+                cat /etc/redhat-release | grep " 7." >/dev/null
                 if [ $? = 0 ] ; then
                     OSVER=CENTOS7
                     ISCENTOS=1
@@ -422,30 +427,30 @@ function check_os
             fi
         fi
     elif [ -f /etc/lsb-release ] ; then
-        cat /etc/lsb-release | grep "DISTRIB_RELEASE=12." > /dev/null
+        cat /etc/lsb-release | grep "DISTRIB_RELEASE=12." >/dev/null
         if [ $? = 0 ] ; then
             OSVER=UBUNTU12
         else
-            cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." > /dev/null
+            cat /etc/lsb-release | grep "DISTRIB_RELEASE=14." >/dev/null
             if [ $? = 0 ] ; then
                 OSVER=UBUNTU14
             else
-                cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." > /dev/null
+                cat /etc/lsb-release | grep "DISTRIB_RELEASE=16." >/dev/null
                 if [ $? = 0 ] ; then
                     OSVER=UBUNTU16
                 fi
             fi
         fi    
     elif [ -f /etc/debian_version ] ; then
-        cat /etc/debian_version | grep "^7." > /dev/null
+        cat /etc/debian_version | grep "^7." >/dev/null
         if [ $? = 0 ] ; then
             OSVER=DEBIAN7
         else
-            cat /etc/debian_version | grep "^8." > /dev/null
+            cat /etc/debian_version | grep "^8." >/dev/null
             if [ $? = 0 ] ; then
                 OSVER=DEBIAN8
             else
-                cat /etc/debian_version | grep "^9." > /dev/null
+                cat /etc/debian_version | grep "^9." >/dev/null
                 if [ $? = 0 ] ; then
                     OSVER=DEBIAN9
                 fi
@@ -476,6 +481,11 @@ function update_centos_hashlib
 
 function install_ols_centos
 {
+    local action=install
+    if [ "x$1" = "xUpdate" ] ; then
+        action=reinstall
+    fi
+    
     local VERSION=
     local ND=
     if [ "x$OSVER" = "xCENTOS5" ] ; then
@@ -494,7 +504,7 @@ function install_ols_centos
     fi
     
     rpm -ivh http://rpms.litespeedtech.com/centos/litespeed-repo-1.1-1.el$VERSION.noarch.rpm
-    yum -y install openlitespeed
+    yum -y $action openlitespeed
     yum -y install epel-release
     yum -y install lsphp$LSPHPVER* --exclude=lsphp$LSPHPVER-xcache* --exclude=lsphp$LSPHPVER-mysql --exclude=lsphp$LSPHPVER-mysql56 --exclude=lsphp$LSPHPVER-debuginfo --exclude=lsphp$LSPHPVER-ioncube-loader --exclude=lsphp$LSPHPVER-dbg
 
@@ -537,20 +547,20 @@ function uninstall_ols_centos
     yum -y remove openlitespeed
     
     if [ "x$LSPHPVER" = "x56" ] ; then
-        yum list installed | grep lsphp | grep process >  /dev/null 2>&1
+        yum list installed | grep lsphp | grep process >/dev/null 2>&1
         if [ $? = 0 ] ; then
             local LSPHPSTR=`yum list installed | grep lsphp | grep process`
             LSPHPVER=`echo $LSPHPSTR | awk '{print substr($0,6,2)}'`
-            echoY "Current install lsphp version is $LSPHPVER"
+            echoY "The installed version of lsphp is $LSPHPVER"
         else
-            echoR "Uninstallation can not get the version infomation of the current installed lsphp."
+            echoR "Uninstallation cannot get the version of the currently installed lsphp."
             echoR "Can not uninstall lsphp correctly."
             LSPHPVER=
         fi
 
     fi
 
-    local ND=nd
+    local ND=
     if [ "x$LSPHPVER" = "x70" ] ; then
         ND=nd
     fi
@@ -569,6 +579,11 @@ function uninstall_ols_centos
 
 function install_ols_debian
 {
+    local action=install
+    if [ "x$1" = "xUpdate" ] ; then
+        action=reinstall
+    fi
+    
     local NAME=
     if [ "x$OSVER" = "xDEBIAN7" ] ; then
         NAME=wheezy
@@ -611,13 +626,13 @@ function uninstall_ols_debian
     apt-get -y --purge remove openlitespeed
     
     if [ "x$LSPHPVER" = "x56" ] ; then
-        dpkg -l | grep lsphp | grep mysql >  /dev/null 2>&1
+        dpkg -l | grep lsphp | grep mysql >/dev/null 2>&1
         if [ $? = 0 ] ; then
             local LSPHPSTR=`dpkg -l | grep lsphp | grep mysql`
             LSPHPVER=`echo $LSPHPSTR | awk '{print substr($2,6,2)}'`
-            echoY "Current install lsphp version is $LSPHPVER"
+            echoY "The installed version of lsphp is $LSPHPVER"
         else
-            echoR "Uninstallation can not get the version infomation of the current installed lsphp."
+            echoR "Uninstallation cannot get the version of the currently installed lsphp."
             echoR "Can not uninstall lsphp correctly."
             LSPHPVER=
         fi
@@ -649,7 +664,7 @@ function install_wordpress
 
     cd "$WORDPRESSPATH"
     wget --no-check-certificate http://wordpress.org/latest.tar.gz
-    tar -xzvf latest.tar.gz  >  /dev/null 2>&1
+    tar -xzvf latest.tar.gz  >/dev/null 2>&1
     rm latest.tar.gz
     
     wget -q -r -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wordpress/wp-content/plugins/litespeed-cache/
@@ -668,7 +683,7 @@ function setup_wordpress
             chown  -R --reference="$WORDPRESSPATH/wordpress/wp-config-sample.php"   "$WORDPRESSPATH/wordpress/wp-config.php"
             echoG "Finished setting up WordPress."
         else
-            echoR "WordPress setup failed. You may not have enough privileges to access $WORDPRESSPATH/wordpress/wp-config.php."
+            echoR "WordPress setup failed. You may not have sufficient privileges to access $WORDPRESSPATH/wordpress/wp-config.php."
             ALLERRORS=1
         fi
     else
@@ -767,7 +782,7 @@ function install_mysql
     fi
     
     if [ $? != 0 ] ; then
-        echoR "An error occured during starting service of Mysql-server. "
+        echoR "An error occured when starting the Mysql-server service. "
         echoR "Please fix this error and try again. Aborting installation!"
         exit 1
     fi
@@ -784,7 +799,7 @@ function install_mysql
             echoG "Mysql root password is $ROOTPASSWORD"
         else
             echoR "Failed to set Mysql root password to $ROOTPASSWORD, it may already have a root password."
-            printf '\033[31mInstallation must know the password for the next step settings.\033[0m'
+            printf '\033[31mInstallation must know the password for the next step.\033[0m'
             test_mysql_password
             
             if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
@@ -1215,7 +1230,7 @@ function setup_mysql
         if [ $? = 0 ] ; then
             mysql${MYSQLOPT} -e "GRANT ALL PRIVILEGES ON *.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
         else
-            echoR "Failed to create mysql user $USERNAME. This user may already exist or a problem occured."
+            echoR "Failed to create mysql user $USERNAME. This user may already exist. If it does not, another problem occured."
             echoR "Please check this and update the wp-config.php file."
             ERROR="Create user error"
         fi
@@ -1225,7 +1240,7 @@ function setup_mysql
     if [ $? = 0 ] ; then
         mysql${MYSQLOPT} -e "GRANT ALL PRIVILEGES ON $DATABASENAME.* TO '$USERNAME'@localhost IDENTIFIED BY '$USERPASSWORD';"
     else
-        echoR "Failed to create database $DATABASENAME. It may already exist or a problem occured."
+        echoR "Failed to create database $DATABASENAME. It may already exist. If it does not, another problem occured."
         echoR "Please check this and update the wp-config.php file."
         if [ "x$ERROR" = "x" ] ; then
             ERROR="Create database error"
@@ -1238,7 +1253,7 @@ function setup_mysql
     if [ "x$ERROR" = "x" ] ; then
         echoG "Finished mysql setup without error."
     else
-        echoR "Finished mysql setup - some error occured."
+        echoR "Finished mysql setup - some error(s) occured."
     fi
 }
 
@@ -1294,7 +1309,7 @@ function uninstall_result
     if [ "x$ALLERRORS" = "x0" ] ; then
         echoG "Uninstallation finished."
     else
-        echoY "Uninstallation finished - some errors occured. Please check these as you may need to manually fix them."
+        echoY "Uninstallation finished - some error(s) occured. Please check these as you may need to manually fix them."
     fi  
     echo
 }
@@ -1302,19 +1317,25 @@ function uninstall_result
 
 function install_ols
 {
+    local STATUS=Install
+    if [ "x$OLSINSTALLED" = "x1" ] ; then
+        echoY "OpenLiteSpeed is already installed, will attempt to update it."
+        STATUS=Update
+    fi
+
     if [ "x$ISCENTOS" = "x1" ] ; then
-        echo "Install on Centos"
-        install_ols_centos
+        echo "$STATUS on Centos"
+        install_ols_centos $STATUS
     else
-        echo "Install on Debian/Ubuntu"
-        install_ols_debian
+        echo "$STATUS on Debian/Ubuntu"
+        install_ols_debian $STATUS
     fi
 }
 
 function config_server
 {
     if [ -e "$SERVER_ROOT/conf/httpd_config.conf" ] ; then
-        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" > /dev/null
+        cat $SERVER_ROOT/conf/httpd_config.conf | grep "virtualhost wordpress" >/dev/null
         if [ $? != 0 ] ; then
             sed -i -e "s/adminEmails/adminEmails $EMAIL\n#adminEmails/" "$SERVER_ROOT/conf/httpd_config.conf"
             VHOSTCONF=$SERVER_ROOT/conf/vhosts/wordpress/vhconf.conf
@@ -1396,9 +1417,7 @@ END
                 echoY "Finished setting OpenLiteSpeed webAdmin password to $ADMINPASSWORD."
                 echoY "Finished updating server configuration."
                 
-                #write the password file for record and remove the previous file.
-                echo "WebAdmin password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
-            else
+           else
                 echoY "OpenLiteSpeed webAdmin password not changed."
             fi
         fi
@@ -1417,13 +1436,12 @@ function getCurStatus
         OLSINSTALLED=0
     fi
  
-    which mysqladmin  > /dev/null 2>&1
+    which mysqladmin  >/dev/null 2>&1
     if [ $? = 0 ] ; then
         MYSQLINSTALLED=1
     else
         MYSQLINSTALLED=0
     fi
-    
 }
 
 function changeOlsPassword
@@ -1453,7 +1471,7 @@ function uninstall
     fi
 }
 
-function readPassword
+function read_password
 {
     if [ "x$1" != "x" ] ; then 
         TEMPPASSWORD=$1
@@ -1472,17 +1490,30 @@ function readPassword
 }
 
 
-function check_password_follow
+function check_value_follow
 {
+    FOLLOWPARAM=$1
+    local PARAM=$1
+    local KEYWORD=$2
+    
     #test if first letter is - or not.
-    local PARAMCHAR=`echo $1 | awk '{print substr($0,1,1)}'`
-    if [ "x$PARAMCHAR" = "x-" ] ; then 
-        PASSWORDPROVIDE=
+    if [ "x$1" = "x-n" ] || [ "x$1" = "x-e" ] || [ "x$1" = "x-E" ] ; then
+        FOLLOWPARAM=
     else
-        PASSWORDPROVIDE=$1
+        local PARAMCHAR=`echo $1 | awk '{print substr($0,1,1)}'`
+        if [ "x$PARAMCHAR" = "x-" ] ; then 
+            FOLLOWPARAM=
+        fi
+    fi
+
+    if [ "x$FOLLOWPARAM" = "x" ] ; then
+        if [ "x$KEYWORD" != "x" ] ; then
+            echoR "Error: '$PARAM' is not a valid '$KEYWORD', please check and try again."
+            usage
+            exit 1
+        fi
     fi
 }
-
 
 
 function usage
@@ -1493,21 +1524,23 @@ function usage
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --email(-e) EMAIL                 " "To set the email of the administrator."
     echoG " --lsphp VERSION                   " "To set the version of lsphp, such as 56, now we support '${LSPHPVERLIST[@]}'."
-    echoG " --wordpress(-w)                   " "Set to install and setup wordpress, ....FIXME......"
-    echoG " --wordpressplus SITEDOMAIN        " "Set to install and setup wordpress, .........FIXME............."
-    echoG " --wordpresspath WORDPRESSPATH     " "To specify a location for new wordpress install ot use an existing wordpress installation."
+    echoG " --wordpress(-w)                   " "To install and setup wordpress, you will still need to access the /wp-admin/wp-config.php"
+    echoG "                                   " "file to finish your wordpress installation."
+    echoG " --wordpressplus SITEDOMAIN        " "To install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup."
+    echoG " --wordpresspath WORDPRESSPATH     " "To specify a location for the new wordpress installation or use an existing wordpress installation."
     echoG " --dbrootpassword(-r) [PASSWORD]   " "To set the mysql server root password instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
     echoG " --dbname DATABASENAME             " "To set the database name to be used by wordpress."
     echoG " --dbuser DBUSERNAME               " "To set the username of wordpress in mysql."
     echoG " --dbpassword [PASSWORD]           " "To set the password of the table used by wordpress in mysql instead of using a random one."
     echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
-    echoG " --listenport WORDPRESSPORT        " "To set the listener port, default is 80."
+    echoG " --listenport WORDPRESSPORT        " "To set the wordpress listener port, default is 80."
     
-    echoG " --wpuser WORDPRESSUSER            " "To set the wordpress user for admin login to wordpress dashboard"
-    echoG " --wppassword [PASSWORD]           " "To set the wordpress user for admin login to wordpress dashboard"
-    echoG " --wplang WORDPRESSLANGUAGE        " "To set the wordpress language"
-    echoG " --sitetitle WORDPRESSSITETITLE    " "To set the wordpress site title"
+    echoG " --wpuser WORDPRESSUSER            " "To set the wordpress user for admin login to the wordpress dashboard, default is wpuser."
+    echoG " --wppassword [PASSWORD]           " "To set the wordpress password for admin login to the wordpress dashboard."
+    echoG "                                   " "If you omit [PASSWORD], ols1clk will prompt you to provide this password during installation."
+    echoG " --wplang WORDPRESSLANGUAGE        " "To set the wordpress language, default is en for English"
+    echoG " --sitetitle WORDPRESSSITETITLE    " "To set the wordpress site title, default is MySite"
     
     echoG " --uninstall                       " "To uninstall OpenLiteSpeed and remove installation directory."
     echoG " --purgeall                        " "To uninstall OpenLiteSpeed, remove installation directory, and purge all data in mysql."
@@ -1516,30 +1549,77 @@ function usage
     echo
 }
 
+function uninstall_warn
+{
+    echo
+    printf "\033[31mAre you sure you want to uninstall? Type 'Y' to continue, otherwise will quit.[y/N]\033[0m "
+    read answer
+    echo
+    
+    if [ "x$answer" != "xY" ] ; then
+        echoG "Uninstallation aborted!" 
+        exit 0
+    fi
+    echo 
+}
+
+function test_page
+{
+    local URL=$1
+    local KEYWORD=$2
+    local PAGENAME=$3
+
+    rm -rf tmp.tmp
+    wget --no-check-certificate -O tmp.tmp  $URL >/dev/null 2>&1
+    grep "$KEYWORD" tmp.tmp  >/dev/null 2>&1
+    
+    if [ $? != 0 ] ; then
+        echoR "Error: $PAGENAME failed."
+    else
+        echoG "OK: $PAGENAME passed."
+    fi
+    rm tmp.tmp
+}
+
+
+function test_ols
+{
+    test_page https://localhost:7080/ "LiteSpeed WebAdmin" "test webAdmin page" 
+    test_page http://localhost:8088/  Congratulation "test Example vhost page" 
+}
+
+function test_wordpress
+{
+    test_page http://localhost:$WPPORT/ "data-continue" "test wordpress first page" 
+}
+
+function test_wordpress_plus
+{
+    test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress first page" 
+}
+
+
 #####################################################################################
 ####   Main function here
 #####################################################################################
 display_license
-check_root
-check_os
-getCurStatus
-#test if have $SERVER_ROOT , and backup it
 
 while [ "$1" != "" ]; do
     case $1 in
-        -a | --adminpassword )      check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+        -a | --adminpassword )      check_value_follow "$2" ""
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    ADMINPASSWORD=$PASSWORDPROVIDE
+                                    ADMINPASSWORD=$FOLLOWPARAM
                                     ;;
 
-        -e | --email )              shift
-                                    EMAIL=$1
+        -e | --email )              check_value_follow "$2" "email address"
+                                    shift
+                                    EMAIL=$FOLLOWPARAM
                                     ;;
                                     
-             --lsphp )              shift
-                                    #echo lsphpversion: $1
+             --lsphp )              check_value_follow "$2" "lsphp version"
+                                    shift
                                     cnt=${#LSPHPVERLIST[@]}
                                     for (( i = 0 ; i < cnt ; i++ ))
                                     do
@@ -1552,58 +1632,72 @@ while [ "$1" != "" ]; do
         -w | --wordpress )          INSTALLWORDPRESS=1
                                     ;;
                                     
-             --wordpressplus )      shift
-                                    SITEDOMAIN=$1
+             --wordpressplus )      check_value_follow "$2" "domain"
+                                    shift
+                                    SITEDOMAIN=$FOLLOWPARAM
                                     INSTALLWORDPRESS=1
                                     INSTALLWORDPRESSPLUS=1
                                     ;;
                                     
-             --wordpresspath )      shift
-                                    WORDPRESSPATH=$1
+             --wordpresspath )      check_value_follow "$2" "wordpress path"
+                                    shift
+                                    WORDPRESSPATH=$FOLLOWPARAM
                                     INSTALLWORDPRESS=1
                                     ;;
                                     
-        -r | --dbrootpassword )     check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+        -r | --dbrootpassword )     check_value_follow "$2" ""
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    ROOTPASSWORD=$PASSWORDPROVIDE
+                                    ROOTPASSWORD=$FOLLOWPARAM
                                     ;;
 
-             --dbname )             shift
-                                    DATABASENAME=$1
+             --dbname )             check_value_follow "$2" "database name"
+                                    shift
+                                    DATABASENAME=$FOLLOWPARAM
                                     ;;
-             --dbuser )             shift
-                                    USERNAME=$1
+             --dbuser )             check_value_follow "$2" "database username"
+                                    shift
+                                    USERNAME=$FOLLOWPARAM
                                     ;;
-             --dbpassword )         check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+             --dbpassword )         check_value_follow "$2" ""
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    USERPASSWORD=$PASSWORDPROVIDE
+                                    USERPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
-             --listenport )         shift
-                                    WPPORT=$1
+             --listenport )         check_value_follow "$2" "listen port"
+                                    shift
+                                    WPPORT=$FOLLOWPARAM
                                     ;;
-                         
 
-             --wpuser )             shift
+             --wpuser )             check_value_follow "$2" "wordpress user"
+                                    shift
                                     WPUSER=$1
                                     ;;
-             --wppassword )         check_password_follow $2
-                                    if [ "x$PASSWORDPROVIDE" != "x" ] ; then
+                                    
+             --wppassword )         check_value_follow "$2" ""
+                                    if [ "x$FOLLOWPARAM" != "x" ] ; then
                                         shift
                                     fi
-                                    WPPASSWORD=$PASSWORDPROVIDE
+                                    WPPASSWORD=$FOLLOWPARAM
                                     ;;
                                     
-             --wplang )             shift
-                                    WPLANGUAGE=$1
+             --wplang )             check_value_follow "$2" "wordpress language"
+                                    shift
+                                    WPLANGUAGE=$FOLLOWPARAM
                                     ;;
                                     
-             --sitetitle )          shift
-                                    WPTITLE=$1
+             --sitetitle )          check_value_follow "$2" "wordpress website title"
+                                    shift
+                                    WPTITLE=$FOLLOWPARAM
+                                    ;;
+
+            --uninstall )           ACTION=UNINSTALL
+                                    ;;
+
+            --purgeall )            ACTION=PURGEALL
                                     ;;
                                     
         -v | --version )            exit 0
@@ -1612,15 +1706,7 @@ while [ "$1" != "" ]; do
         -h | --help )               usage
                                     exit 0
                                     ;;
-            --uninstall )           uninstall
-                                    uninstall_result
-                                    exit 0
-                                    ;;
-            --purgeall )            uninstall
-                                    purgedatabase
-                                    uninstall_result
-                                    exit 0
-                                    ;;
+
         * )                         usage
                                     exit 0
                                     ;;
@@ -1628,6 +1714,34 @@ while [ "$1" != "" ]; do
     shift
 done
 
+
+check_root
+check_os
+getCurStatus
+#test if have $SERVER_ROOT , and backup it
+
+if [ "x$ACTION" = "xUNINSTALL" ] ; then
+    uninstall_warn
+    uninstall
+    uninstall_result
+    exit 0
+fi
+
+if [ "x$ACTION" = "xPURGEALL" ] ; then
+    uninstall_warn
+    
+    if [ "x$ROOTPASSWORD" = "x" ] ; then
+        passwd=
+        echoY "Please input the mysql root password: "
+        read passwd
+        ROOTPASSWORD=$passwd   
+    fi
+
+    uninstall
+    purgedatabase
+    uninstall_result
+    exit 0
+fi
 
 
 if [ "x$OSVER" = "xCENTOS5" ] ; then
@@ -1645,26 +1759,28 @@ if [ "x$EMAIL" = "x" ] ; then
     fi
 fi
 
-readPassword "$ADMINPASSWORD" "webAdmin password"
+read_password "$ADMINPASSWORD" "webAdmin password"
 ADMINPASSWORD=$TEMPPASSWORD
-readPassword "$ROOTPASSWORD" "mysql root password"
-ROOTPASSWORD=$TEMPPASSWORD
-readPassword "$USERPASSWORD" "mysql user password"
-USERPASSWORD=$TEMPPASSWORD
+
+
+if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+    read_password "$ROOTPASSWORD" "mysql root password"
+    ROOTPASSWORD=$TEMPPASSWORD
+    read_password "$USERPASSWORD" "mysql user password"
+    USERPASSWORD=$TEMPPASSWORD
+fi
+
 if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
-    readPassword "$WPPASSWORD" "Wordpress admin password"
+    read_password "$WPPASSWORD" "Wordpress admin password"
     WPPASSWORD=$TEMPPASSWORD
 fi
 
 echo
-echoR "Starting to install openlitespeed to $SERVER_ROOT/ with below parameters,"
+echoR "Starting to install openlitespeed to $SERVER_ROOT/ with the parameters below,"
 echoY "WebAdmin password:        " "$ADMINPASSWORD"
 echoY "WebAdmin email:           " "$EMAIL"
-echoY "Mysql root Password:      " "$ROOTPASSWORD"
-echoY "Database name:            " "$DATABASENAME"
-echoY "Database username:        " "$USERNAME"
-echoY "Database password:        " "$USERPASSWORD"
 echoY "lsphp version:            " "$LSPHPVER"
+
 
 
 WORDPRESSINSTALLED=
@@ -1672,6 +1788,10 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     echoY "Install wordpress:        " Yes
     echoY "WordPress listenport:     " "$WPPORT"
     echoY "Web site domain:          " "$SITEDOMAIN"
+    echoY "Mysql root Password:      " "$ROOTPASSWORD"
+    echoY "Database name:            " "$DATABASENAME"
+    echoY "Database username:        " "$USERNAME"
+    echoY "Database password:        " "$USERPASSWORD"
     
     if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
         echoY "Wordpress plus:           " Yes
@@ -1685,20 +1805,16 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     
     
     if [ -e "$WORDPRESSPATH/wordpress/wp-config.php" ] ; then
-        echoY "WordPress location:       " "$WORDPRESSPATH.(Exsiting)"
+        echoY "WordPress location:       " "$WORDPRESSPATH (Exsiting)"
         WORDPRESSINSTALLED=1
     else
-        echoY "WordPress location:       " "$WORDPRESSPATH.(New install)"
+        echoY "WordPress location:       " "$WORDPRESSPATH (New install)"
         WORDPRESSINSTALLED=0
     fi
-
-
-else
-    echoY "Install WordPress:        " "No"
 fi
 
 echo
-printf '\033[31mIs the settings correct? Type n to quit, otherwise will continue.[Y/n]\033[0m '
+printf '\033[31mAre these settings correct? Type n to quit, otherwise will continue.[Y/n]\033[0m '
 read answer
 echo
 
@@ -1712,14 +1828,10 @@ echo
 ####begin here#####
 update_centos_hashlib
 check_wget
-
-if [ "x$OLSINSTALLED" = "x1" ] ; then
-    echoY "OpenLiteSpeed is already installed, will attempt to update it."
-fi
 install_ols
-if [ "x$ISCENTOS" = "x1" ] ; then
-  csf_install
-fi
+
+#write the password file for record and remove the previous file.
+echo "WebAdmin password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
@@ -1731,13 +1843,13 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     else
         test_mysql_password
     fi    
-
+    
     if [ "x$WORDPRESSINSTALLED" != "x1" ] ; then
         install_wordpress
         setup_wordpress
     
         if [ "x$TESTPASSWORDERROR" = "x1" ] ; then
-            echoY "Mysql setup byppassed due to not know the root password."
+            echoY "Mysql setup bypassed, can not get root password."
         else
             ROOTPASSWORD=$CURROOTPASSWORD
             setup_mysql
@@ -1745,6 +1857,7 @@ if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     fi
     
     config_server
+    echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
     
     if [ "x$WPPORT" = "x80" ] ; then
         if [ "x$ISCENTOS" = "x1" ] ; then
@@ -1771,7 +1884,6 @@ fi
 $SERVER_ROOT/bin/lswsctrl stop
 $SERVER_ROOT/bin/lswsctrl start
 
-echo "mysql root password is [$ROOTPASSWORD]." >> $SERVER_ROOT/password
 
 if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
     if [ "x$WPPORT" != "x80" ] ; then
@@ -1780,15 +1892,15 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
         INSTALLURL=http://$SITEDOMAIN/wp-admin/install.php
     fi
 
-    wget $INSTALLURL>  /dev/null 2>&1
+    wget $INSTALLURL >/dev/null 2>&1
     sleep 5
     
     #echo "wget --post-data 'language=$WPLANGUAGE' --referer=$INSTALLURL $INSTALLURL?step=1"
-    wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1>  /dev/null 2>&1
+    wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1 >/dev/null 2>&1
     sleep 1
     
     #echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
-    wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >  /dev/null 2>&1
+    wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
 
     echo "wordpress administrator username is [$WPUSER], password is [$WPPASSWORD]." >> $SERVER_ROOT/password
 fi
@@ -1810,7 +1922,7 @@ if [ "x$ALLERRORS" = "x0" ] ; then
         echoG "Wordpress web root at ${WORDPRESSPATH}/wordpress"
         echoG "Wordpress $DATABASENAME with username: $USERNAME password: $USERPASSWORD"
         echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
-        echoG "And also you may want to activate Litespeed Cache plugin to get better performance."
+        echoG "And also you may want to activate the Litespeed Cache plugin to get better performance."
     fi
     echo
     echoG "OLS Version Installed:"
@@ -1830,14 +1942,26 @@ if [ "x$ALLERRORS" = "x0" ] ; then
 
     echo
 else
-    echoY "Installation finished. It seems some errors occured, please check this as you may need to manually fix them."
+    echoY "Installation finished. Some errors seem to have occured, please check this as you may need to manually fix them."
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
-        echoG "And also you may want to activate Litespeed Cache plugin to get better performance."
+        echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
     fi
 fi  
+
 echo
-echoG "If you run into any problems, they can sometimes be fixed by purgeall and reinstalling."
+echoY "Testing ..."
+test_ols
+if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
+    if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
+        test_wordpress_plus
+    else
+        test_wordpress
+    fi
+fi
+
+echo
+echoG "If you run into any problems, they can sometimes be fixed by running with the --purgeall flag and reinstalling."
 echoG 'Thanks for using "OpenLiteSpeed One click installation".'
 echoG "Enjoy!"
 echo
