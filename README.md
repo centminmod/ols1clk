@@ -11,10 +11,9 @@ Installing forked [centminmod](https://github.com/centminmod/ols1clk/tree/centmi
 
 Forked branch has following changes for CentOS 6 or CentOS 7 only ported from my [Centmin Mod LEMP Project](https://centminmod.com):
 
-* switches from system `mysql-server` package to MariaDB official YUM repo based MariaDB 10.1 + Essential MariaDB MySQL Plugins
+* switches from system `mysql-server` package to MariaDB official YUM repo based MariaDB 10.2
 * revise the mysql root user password setup (set /root/.my.cnf as well) and remove testing the mysql root user password
 * installs by default CSF Firewall and auto detects if system supports IPSET and installs & configures CSF for IPSET support
-* strength random password generation routine
 * revised the selection of default LSAPI PHP YUM packages installed.
 
 Install
@@ -27,7 +26,7 @@ Install with PHP 7.x
 
     git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com --lsphp 70
+    ./ols1clk.sh -e youremail@domain.com --lsphp 71
 
 If want to install Wordpress
 
@@ -54,6 +53,7 @@ When run with no options, ols1clk will install OpenLiteSpeed with the default se
   * If you omit **[PASSWORD]**, ols1clk will prompt you to provide this password during installation.
 * **--email(-e) EMAIL:** to set the email of the administrator.
 * **--lsphp VERSION:** to set the version of lsphp, such as 56, we currently support 54 55 56 and 70.
+* **--mariadbver VERSION:** to set the version of mariadb server, such as 10.1, we currently support 10.0 10.1 and 10.2.
 * **--wordpress(-w):** to install and setup wordpress. You will still need to access the /wp-admin/wp-config.php file to finish your wordpress installation.
 * **--wordpressplus SITEDOMAIN:** to install, setup, and configure wordpress, eliminating the need to use the wp-config.php setup. 
 * **--wordpresspath WORDPRESSPATH:** to specify a location for the new wordpress installation or use an existing wordpress installation.
@@ -78,4 +78,3 @@ Get in Touch
 --------
 
 OpenLiteSpeed has a [Google Group](https://groups.google.com/forum/#!forum/openlitespeed-development). If you find a bug, want to request new features, or just want to talk about OpenLiteSpeed, this is the place to do it.
-
