@@ -36,6 +36,8 @@ OSTYPE=`uname -m`
 MARIADBCPUARCH=
 
 SERVER_ROOT=/usr/local/lsws
+LSWSADMINCONFIG='/usr/local/lsws/admin/conf/admin_config.conf'
+LSWSCONFIG='/usr/local/lsws/conf/httpd_config.conf'
 
 #Current status
 OLSINSTALLED=
@@ -125,6 +127,57 @@ if [ -f "${MYSQLEXTRA_FILE}" ]; then
 else
   MYSQLOPT=" -uroot -p$ROOTPASSWORD"
 fi
+
+ols_tweaks() {
+    if [ -d /usr/local/src/centminmod ]; then
+        USER='nginx'       # change to your preferred user to run OLS
+        GROUP='nginx'      # change to your preferred group to run OLS
+    else
+        USER='nobody'       # change to your preferred user to run OLS
+        GROUP='nobody'      # change to your preferred group to run OLS
+    fi
+    echo
+    echo "setup command shortcuts"
+    echo "/usr/local/lsws/bin/lswsctrl start" > /usr/bin/lsstart
+    echo "/usr/local/lsws/bin/lswsctrl stop" > /usr/bin/lsstop
+    echo "/usr/local/lsws/bin/lswsctrl restart" > /usr/bin/lsrestart
+    echo "/usr/local/lsws/bin/lswsctrl reload" > /usr/bin/lsreload
+    chmod 0700 /usr/bin/lsstart
+    chmod 0700 /usr/bin/lsstop
+    chmod 0700 /usr/bin/lsrestart
+    chmod 0700 /usr/bin/lsreload
+
+    alias lsadedit='nano -w /usr/local/lsws/admin/conf/admin_config.conf'
+    alias lsconf='nano -w /usr/local/lsws/conf/httpd_config.conf'
+    echo "alias lsadedit='nano -w /usr/local/lsws/admin/conf/admin_config.conf'" >> /root/.bashrc
+    echo "alias lsconf='nano -w /usr/local/lsws/conf/httpd_config.conf'" >> /root/.bashrc
+    # /usr/local/lsws/admin/conf/admin_config.conf
+    sed -i 's/secure                1/secure                0/' $LSWSADMINCONFIG
+
+    # /usr/local/lsws/conf/httpd_config.conf
+    echo -n "General Tweaks"
+    sed -i 's/indexFiles                index.html/indexFiles                index.html index.php/g' ${LSWSCONFIG}
+    sed -i "s/user                      nobody/user                      $USER/g" ${LSWSCONFIG}
+    sed -i "group                     nobody/group                     $GROUP/g" ${LSWSCONFIG}
+    sed -i "s/inMemBufSize              60M/inMemBufSize              60M/g" ${LSWSCONFIG}
+    echo " done"
+    echo -n "Tuning Tweaks"
+    sed -i "s/smartKeepAlive          0/smartKeepAlive          1/g" ${LSWSCONFIG}
+    sed -i "s/sndBufSize              0/sndBufSize              65535/g" ${LSWSCONFIG}
+    sed -i "s/rcvBufSize              0/rcvBufSize              65535/g" ${LSWSCONFIG}
+    sed -i "s/maxCachedFileSize       4096/maxCachedFileSize       16384/g" ${LSWSCONFIG}
+    sed -i "s/totalInMemCacheSize     20M/totalInMemCacheSize     40M/g" ${LSWSCONFIG}
+    sed -i "s/maxMMapFileSize         256K/maxMMapFileSize         512K/g" ${LSWSCONFIG}
+    sed -i "s/totalMMapCacheSize      40M/totalMMapCacheSize      80M/g" ${LSWSCONFIG}
+    echo " done"
+    echo -n "External App lsphp5 Tweaks"
+    sed -i "s/maxConns                35/maxConns                50/g" ${LSWSCONFIG}
+    sed -i "s/PHP_LSAPI_CHILDREN=35/PHP_LSAPI_CHILDREN=50/g" ${LSWSCONFIG}
+    sed -i "s/memSoftLimit            2047M/memSoftLimit            2047M/g" ${LSWSCONFIG}
+    sed -i "s/memHardLimit            2047M/memHardLimit            2047M/g" ${LSWSCONFIG}
+    sed -i "s/procSoftLimit           400/procSoftLimit           1000/g" ${LSWSCONFIG}
+    sed -i "s/procHardLimit           500/procHardLimit           1200/g" ${LSWSCONFIG}
+}
 
 csf_install() {
     local VERSION=
@@ -582,11 +635,10 @@ function install_ols_centos
         else
             ln -s $SERVER_ROOT/lsphp$LSPHPVER/bin/phpdbg /usr/bin/lsphpdbg
         fi
-        # cmd shortcuts
-        echo "service lsws stop" >/usr/bin/lsstop ; chmod 700 /usr/bin/lsstop
-        echo "service lsws start" >/usr/bin/lsstart ; chmod 700 /usr/bin/lsstart
-        echo "service lsws restart" >/usr/bin/lsrestart ; chmod 700 /usr/bin/lsrestart
-        echo "service lsws reload" >/usr/bin/lsreload ; chmod 700 /usr/bin/lsreload
+        ols_tweaks
+        if [ ! -f /etc/csf/csf.conf ]; then
+            csf_install
+        fi
     fi
 }
 
