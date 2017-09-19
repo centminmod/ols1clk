@@ -54,6 +54,7 @@ WPPASSWORD=$TEMPRANDSTR
 ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
 ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
 MYSQLEXTRA_FILE='/root/.my.cnf'
+MYSQLINSTALL='n'
 DATABASENAME=olsdbname
 USERNAME=olsdbuser
 
@@ -1796,7 +1797,11 @@ echo "WebAdmin password is [$ADMINPASSWORD]." > $SERVER_ROOT/password
 
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     if [ "x$MYSQLINSTALLED" != "x1" ] ; then
-        install_mysql
+        if [[ "$MYSQLINSTALL" = [yY] ]]; then
+            install_mysql
+        else
+            echo "skip install_mysql"
+        fi
     else
         test_mysql_password
     fi    
