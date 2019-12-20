@@ -28,25 +28,25 @@ Forked branch has following changes for CentOS 6 or CentOS 7 only ported from my
 
 Install
 
-    git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
+    git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com
+    ./ols1clk.sh -e youremail@domain.com --listenport 81 --ssllistenport 448
 
 Install with PHP 7.x
 
-    git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
+    git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com --lsphp 71
+    ./ols1clk.sh -e youremail@domain.com --lsphp 73 --listenport 81 --ssllistenport 448
 
 If want to install Wordpress
 
-    git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
+    git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
     ./ols1clk.sh -e youremail@domain.com -w --dbname WPDATABASENAME --dbuser WPUSERNAME
 
 If want to install Wordpress and listen on port 81
 
-    git clone -b centminmod --depth=1 https://github.com/centminmod/ols1clk
+    git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
     ./ols1clk.sh -e youremail@domain.com -w --dbname WPDATABASENAME --dbuser WPUSERNAME --listenport 81
 

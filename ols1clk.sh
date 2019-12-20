@@ -37,6 +37,8 @@ OSTYPE=`uname -m`
 MARIADBCPUARCH=
 
 SERVER_ROOT=/usr/local/lsws
+LSWSADMINCONFIG='/usr/local/lsws/admin/conf/admin_config.conf'
+LSWSCONFIG='/usr/local/lsws/conf/httpd_config.conf'
 
 #Current status
 OLSINSTALLED=
@@ -75,7 +77,7 @@ EMAIL=
 
 #All lsphp versions, keep using two digits to identify a version!!!
 #otherwise, need to update the uninstall function which will check the version
-LSPHPVERLIST=(54 55 56 70 71 72 73)
+LSPHPVERLIST=(54 55 56 70 71 72 73 74)
 MARIADBVERLIST=(10.0 10.1 10.2 10.3 10.4)
 
 #default version
@@ -159,31 +161,31 @@ ols_tweaks() {
     echo "alias lsadedit='nano -w /usr/local/lsws/admin/conf/admin_config.conf'" >> /root/.bashrc
     echo "alias lsconf='nano -w /usr/local/lsws/conf/httpd_config.conf'" >> /root/.bashrc
     # /usr/local/lsws/admin/conf/admin_config.conf
-    sed -i 's/secure                1/secure                0/' $LSWSADMINCONFIG
+    # sed -i 's/secure                1/secure                0/' $LSWSADMINCONFIG
 
     # /usr/local/lsws/conf/httpd_config.conf
     echo -n "General Tweaks"
-    sed -i 's/indexFiles                index.html/indexFiles                index.html index.php/g' ${LSWSCONFIG}
-    sed -i "s/user                      nobody/user                      $USER/g" ${LSWSCONFIG}
-    sed -i "group                     nobody/group                     $GROUP/g" ${LSWSCONFIG}
-    sed -i "s/inMemBufSize              60M/inMemBufSize              60M/g" ${LSWSCONFIG}
+    # sed -i 's/indexFiles                index.html/indexFiles                index.html index.php/g' ${LSWSCONFIG}
+    sed -i "s/user                             nobody/user                             $USER/g" ${LSWSCONFIG}
+    sed -i "s/group                            nobody/group                            $GROUP/g" ${LSWSCONFIG}
+    # sed -i "s/inMemBufSize              60M/inMemBufSize              60M/g" ${LSWSCONFIG}
     echo " done"
     echo -n "Tuning Tweaks"
-    sed -i "s/smartKeepAlive          0/smartKeepAlive          1/g" ${LSWSCONFIG}
-    sed -i "s/sndBufSize              0/sndBufSize              65535/g" ${LSWSCONFIG}
-    sed -i "s/rcvBufSize              0/rcvBufSize              65535/g" ${LSWSCONFIG}
-    sed -i "s/maxCachedFileSize       4096/maxCachedFileSize       16384/g" ${LSWSCONFIG}
-    sed -i "s/totalInMemCacheSize     20M/totalInMemCacheSize     40M/g" ${LSWSCONFIG}
-    sed -i "s/maxMMapFileSize         256K/maxMMapFileSize         512K/g" ${LSWSCONFIG}
-    sed -i "s/totalMMapCacheSize      40M/totalMMapCacheSize      80M/g" ${LSWSCONFIG}
+    # sed -i "s/smartKeepAlive          0/smartKeepAlive          1/g" ${LSWSCONFIG}
+    # sed -i "s/sndBufSize              0/sndBufSize              65535/g" ${LSWSCONFIG}
+    # sed -i "s/rcvBufSize              0/rcvBufSize              65535/g" ${LSWSCONFIG}
+    # sed -i "s/maxCachedFileSize       4096/maxCachedFileSize       16384/g" ${LSWSCONFIG}
+    # sed -i "s/totalInMemCacheSize     20M/totalInMemCacheSize     40M/g" ${LSWSCONFIG}
+    # sed -i "s/maxMMapFileSize         256K/maxMMapFileSize         512K/g" ${LSWSCONFIG}
+    # sed -i "s/totalMMapCacheSize      40M/totalMMapCacheSize      80M/g" ${LSWSCONFIG}
     echo " done"
     echo -n "External App lsphp5 Tweaks"
-    sed -i "s/maxConns                35/maxConns                50/g" ${LSWSCONFIG}
-    sed -i "s/PHP_LSAPI_CHILDREN=35/PHP_LSAPI_CHILDREN=50/g" ${LSWSCONFIG}
-    sed -i "s/memSoftLimit            2047M/memSoftLimit            2047M/g" ${LSWSCONFIG}
-    sed -i "s/memHardLimit            2047M/memHardLimit            2047M/g" ${LSWSCONFIG}
-    sed -i "s/procSoftLimit           400/procSoftLimit           1000/g" ${LSWSCONFIG}
-    sed -i "s/procHardLimit           500/procHardLimit           1200/g" ${LSWSCONFIG}
+    # sed -i "s/maxConns                35/maxConns                50/g" ${LSWSCONFIG}
+    # sed -i "s/PHP_LSAPI_CHILDREN=35/PHP_LSAPI_CHILDREN=50/g" ${LSWSCONFIG}
+    # sed -i "s/memSoftLimit            2047M/memSoftLimit            2047M/g" ${LSWSCONFIG}
+    # sed -i "s/memHardLimit            2047M/memHardLimit            2047M/g" ${LSWSCONFIG}
+    # sed -i "s/procSoftLimit           400/procSoftLimit           1000/g" ${LSWSCONFIG}
+    # sed -i "s/procHardLimit           500/procHardLimit           1200/g" ${LSWSCONFIG}
 }
 
 csf_install() {
@@ -627,7 +629,8 @@ function install_ols_centos
     fi
     yum -y install lsphp$LSPHPVER-mysqlnd
 
-    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON
+    LSPHP_EXTRA_YUM='lsphp73-bcmath lsphp73-dba lsphp73-enchant lsphp73-gmp lsphp73-intl lsphp73-opcache lsphp73-pecl-memcache lsphp73-pecl-memcached lsphp73-pecl-redis lsphp73-recode lsphp73-pspell lsphp73-snmp lsphp73-soap lsphp73-sodium lsphp73-tidy lsphp73-xmlrpc lsphp73-zip'
+    yum -y $action lsphp$LSPHPVER lsphp$LSPHPVER-common lsphp$LSPHPVER-gd lsphp$LSPHPVER-process lsphp$LSPHPVER-mbstring lsphp$LSPHPVER-xml lsphp$LSPHPVER-mcrypt lsphp$LSPHPVER-pdo lsphp$LSPHPVER-imap $JSON $LSPHP_EXTRA_YUM
 
     if [ $? != 0 ] ; then
         echoR "An error occured during OpenLiteSpeed installation."
@@ -635,6 +638,10 @@ function install_ols_centos
     else
         ln -sf $SERVER_ROOT/lsphp$LSPHPVER/bin/lsphp $SERVER_ROOT/fcgi-bin/lsphpnew
         sed -i -e "s/fcgi-bin\/lsphp/fcgi-bin\/lsphpnew/g" "$SERVER_ROOT/conf/httpd_config.conf"
+    fi
+    ols_tweaks
+    if [ ! -f /etc/csf/csf.conf ]; then
+        csf_install
     fi
 }
 
@@ -2081,9 +2088,11 @@ if [ "x$ALLERRORS" = "x0" ] ; then
     echoG "PHP php.ini file at /usr/local/lsws/php/php.ini"
     echoG "PHP Config Scan Dir at /usr/local/lsws/lsphp$LSPHPVER/etc/php.d/"
     echoG "Please access http://localhost:$ADMINPORT/ for admin console with password = $ADMINPASSWORD."
+    if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoG "Wordpress site vhost file at $VHOSTCONF"
         echoG "Wordpress web root at ${WORDPRESSPATH}"
         echoG "Wordpress $DATABASENAME with username: $USERNAME password: $USERPASSWORD"
+    fi
     echo
     echoG "OLS Version Installed:"
     if [ -f /usr/local/lsws/modules/modpagespeed.so ]; then
@@ -2094,7 +2103,8 @@ if [ "x$ALLERRORS" = "x0" ] ; then
 
     echo
     echoG "PHPV Version Installed:"
-    /usr/bin/php -v
+    echo "/usr/local/lsws/lsphp${LSPHPVER}/bin/php -v"
+    /usr/local/lsws/lsphp${LSPHPVER}/bin/php -v
 
     echo
     echoG "MariaDB Installed:"
