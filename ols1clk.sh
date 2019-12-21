@@ -805,7 +805,12 @@ function setup_wordpress
 
 function test_mysql_password
 {
-    CURROOTPASSWORD=$ROOTPASSWORD
+    if [[ -f /root/.my.cnf && "$(awk -F '=' '/password=/ {print $2}' /root/.my.cnf)" ]]; then
+        ROOTPASSWORD=$(awk -F '=' '/password=/ {print $2}' /root/.my.cnf)
+        CURROOTPASSWORD=$ROOTPASSWORD
+    else
+        CURROOTPASSWORD=$ROOTPASSWORD
+    fi
     TESTPASSWORDERROR=0
 
     mysqladmin -uroot -p$CURROOTPASSWORD password $CURROOTPASSWORD
