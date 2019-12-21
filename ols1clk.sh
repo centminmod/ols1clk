@@ -2156,8 +2156,17 @@ echoY "MariaDB version:          " "$MARIADBVER"
 WORDPRESSINSTALLED=
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     echoY "Install WordPress:        " Yes
+    echoY "Permalinks Structure: " "/%post_id%/%postname%/"
+    echoY "WordPress .htaccess: " "$WORDPRESSPATH/.htaccess"
     echoY "WordPress HTTP port:      " "$WPPORT"
-    echoY "WordPress HTTPS port:     " "$SSLWPPORT"
+    if [ -f "$SERVER_ROOT/conf/${CERT}.ecc" ]; then
+        echoY "WordPress RSA 2048 bit HTTPS port:     " "$SSLWPPORT"
+        echoY "WordPress RSA 2048 bit HTTPS cert: " "$SERVER_ROOT/conf/$CERT"
+        echoY "WordPress ECDSA 256bit HTTPS port:     " "$((SSLWPPORT+1))"
+        echoY "WordPress ECDSA 256bit HTTPS cert: " "$SERVER_ROOT/conf/${CERT}.ecc"
+    else
+        echoY "WordPress HTTPS port:     " "$SSLWPPORT"
+    fi
     echoY "Web site domain:          " "$SITEDOMAIN"
     echoY "MySQL root Password:      " "$ROOTPASSWORD"
     echoY "Database name:            " "$DATABASENAME"
