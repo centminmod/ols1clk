@@ -168,6 +168,8 @@ ols_tweaks() {
     # sed -i 's/indexFiles                index.html/indexFiles                index.html index.php/g' ${LSWSCONFIG}
     sed -i "s/user                             nobody/user                             $USER/g" ${LSWSCONFIG}
     sed -i "s/group                            nobody/group                            $GROUP/g" ${LSWSCONFIG}
+    sed -i 's|maxConnections               2000|maxConnections               100000|g' ${LSWSCONFIG}
+    sed -i 's|maxSSLConnections            1000|maxSSLConnections            100000|g' ${LSWSCONFIG}
     # sed -i "s/inMemBufSize              60M/inMemBufSize              60M/g" ${LSWSCONFIG}
     echo " done"
     echo -n "Tuning Tweaks"

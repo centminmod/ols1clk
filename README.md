@@ -42,13 +42,13 @@ If want to install Wordpress
 
     git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com -w --dbname WPDATABASENAME --dbuser WPUSERNAME
+    ./ols1clk.sh -e youremail@domain.com --lsphp 73 -w --dbname WPDATABASENAME --dbuser WPUSERNAME
 
-If want to install Wordpress and listen on port 81
+If want to install Wordpress and HTTP listen on port 81 and HTTPS on port 448
 
     git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
-    ./ols1clk.sh -e youremail@domain.com -w --dbname WPDATABASENAME --dbuser WPUSERNAME --listenport 81
+    ./ols1clk.sh -e youremail@domain.com --lsphp 73 -w --dbname WPDATABASENAME --dbuser WPUSERNAME --listenport 81 --ssllistenport 448
 
 Running ols1clk
 --------
