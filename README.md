@@ -21,10 +21,11 @@ Installing forked [centminmod](https://github.com/centminmod/ols1clk/tree/centmi
 
 Forked branch has following changes for CentOS 6 or CentOS 7 only ported from my [Centmin Mod LEMP Project](https://centminmod.com):
 
-* switches from system `mysql-server` package to MariaDB official YUM repo based MariaDB 10.2
+* uses default MariaDB 10.3 installed by Centmin Mod already so skips MySQL server install
 * revise the mysql root user password setup (set /root/.my.cnf as well) and remove testing the mysql root user password
-* installs by default CSF Firewall and auto detects if system supports IPSET and installs & configures CSF for IPSET support
+* if detected CSF doesn't exit, installs by default CSF Firewall and auto detects if system supports IPSET and installs & configures CSF for IPSET support
 * revised the selection of default LSAPI PHP YUM packages installed.
+* changes default HTTP listen port to 8080 and default HTTPS listen port to 8443 unless you specify `--listenport` and `--ssllistenport` flags.
 
 Install
 
@@ -38,7 +39,7 @@ Install with PHP 7.x
     cd ols1clk
     ./ols1clk.sh -e youremail@domain.com --lsphp 73 --listenport 81 --ssllistenport 448
 
-If want to install Wordpress
+If want to install Wordpress with default HTTP listen port to 8080 and default HTTPS listen port to 8443
 
     git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
