@@ -29,8 +29,26 @@ function getRandPassword
         rm /tmp/randpasswdtmpfile
         local DATE=`date`
         TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
+        dd if=/dev/urandom bs=8 count=1 of=/tmp/randpasswdtmpfile >/dev/null 2>&1
+        TEMPRANDSTR=`cat /tmp/randpasswdtmpfile`
+        rm /tmp/randpasswdtmpfile
+        local DATE=`date`
+        TEMPRANDSTR_TWO=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 14`
+        dd if=/dev/urandom bs=8 count=1 of=/tmp/randpasswdtmpfile >/dev/null 2>&1
+        TEMPRANDSTR=`cat /tmp/randpasswdtmpfile`
+        rm /tmp/randpasswdtmpfile
+        local DATE=`date`
+        TEMPRANDSTR_THREE=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 16`
+        dd if=/dev/urandom bs=8 count=1 of=/tmp/randpasswdtmpfile >/dev/null 2>&1
+        TEMPRANDSTR=`cat /tmp/randpasswdtmpfile`
+        rm /tmp/randpasswdtmpfile
+        local DATE=`date`
+        TEMPRANDSTR_FOUR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 17`
     elif [ -f /usr/bin/pwgen ]; then
         TEMPRANDSTR=$(pwgen -1nys -r \'\"\@\?\^\&\*\(\)\`\:\~\?\;\:\[\]\{\}\.\,\\\/\| 8)
+        TEMPRANDSTR_TWO=$(pwgen -1nys -r \'\"\@\?\^\&\*\(\)\`\:\~\?\;\:\[\]\{\}\.\,\\\/\| 16)
+        TEMPRANDSTR_THREE=$(pwgen -1nys -r \'\"\@\?\^\&\*\(\)\`\:\~\?\;\:\[\]\{\}\.\,\\\/\| 18)
+        TEMPRANDSTR_FOUR=$(pwgen -1nys -r \'\"\@\?\^\&\*\(\)\`\:\~\?\;\:\[\]\{\}\.\,\\\/\| 19)
     fi
 }
 
@@ -52,11 +70,11 @@ TESTGETERROR=no
 getRandPassword
 ADMINPASSWORD=$TEMPRANDSTR
 getRandPassword
-ROOTPASSWORD=$TEMPRANDSTR
+ROOTPASSWORD=$TEMPRANDSTR_FOUR
 getRandPassword
-USERPASSWORD=$TEMPRANDSTR
+USERPASSWORD=$TEMPRANDSTR_THREE
 getRandPassword
-WPPASSWORD=$TEMPRANDSTR
+WPPASSWORD=$TEMPRANDSTR_TWO
 
 MYSQLEXTRA_FILE='/root/.my.cnf'
 MYSQLINSTALL='n'
