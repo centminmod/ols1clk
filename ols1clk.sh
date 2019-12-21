@@ -71,6 +71,9 @@ FORCEYES=0
 WPLANGUAGE=en
 WPUSER=wpuser
 WPTITLE=MySite
+WPCLI_EXTRAPACKAGES='n'
+WPCLIDIR='/root/wpcli'
+WPCLILINK='https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar'
 
 SITEDOMAIN=*
 EMAIL=
@@ -776,6 +779,24 @@ function install_wordpress
 
         wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chown -R --reference=$SERVER_ROOT/autoupdate  $WORDPRESSPATH
+
+        # setup permalinks
+        installwpcli
+        pushd $WORDPRESSPATH
+        \wp rewrite structure '/%post_id%/%postname%/' --allow-root
+        echo > "$WORDPRESSPATH/.htaccess"
+        echo '# BEGIN WordPress' >> "$WORDPRESSPATH/.htaccess"
+        echo '<IfModule mod_rewrite.c>' >> "$WORDPRESSPATH/.htaccess"
+        echo 'RewriteEngine On' >> "$WORDPRESSPATH/.htaccess"
+        echo 'RewriteBase /' >> "$WORDPRESSPATH/.htaccess"
+        echo 'RewriteRule ^index\.php$ - [L]' >> "$WORDPRESSPATH/.htaccess"
+        echo 'RewriteCond %{REQUEST_FILENAME} !-f' >> "$WORDPRESSPATH/.htaccess"
+        echo 'RewriteCond %{REQUEST_FILENAME} !-d' >> "$WORDPRESSPATH/.htaccess"
+        echo 'RewriteRule . /index.php [L]' >> "$WORDPRESSPATH/.htaccess"
+        echo '</IfModule>' >> "$WORDPRESSPATH/.htaccess"
+        echo '# END WordPress' >> "$WORDPRESSPATH/.htaccess"
+        /usr/local/lsws/bin/lswsctrl restart
+        popd
 
         cd -
     else
@@ -1826,6 +1847,85 @@ function test_wordpress_plus
     test_page http://localhost:8088/  Congratulation "test Example vhost page"
     test_page http://$SITEDOMAIN:$WPPORT/ hello-world "test wordpress HTTP first page"
     test_page https://$SITEDOMAIN:$SSLWPPORT/ hello-world "test wordpress HTTPS first page"
+}
+
+installwpcli() {
+    mkdir -p $WPCLIDIR
+    if [ ! -f /usr/bin/git ]; then
+        yum -q -y install git
+    fi
+    if [[ ! -f /usr/bin/wp ]]; then
+        echo ""
+        if [ -s /usr/bin/wp ]; then
+            echo "/usr/bin/wp [found]"
+        else
+            echo "Error: /usr/bin/wp not found !!! Downloading now......"
+            wget -4cnv --no-check-certificate $WPCLILINK -O /usr/bin/wp --tries=3 
+            ERROR=$?
+            if [[ "$ERROR" != '0' ]]; then
+                echo "Error: /usr/bin/wp download failed."
+                exit 1
+            else 
+                echo "Download done."
+            fi
+        fi
+        if [ -f /usr/bin/wp ]; then
+            chmod 0700 /usr/bin/wp
+        fi
+        echo ""
+        if [ -s "${WPCLIDIR}/wp-completion.bash" ]; then
+            echo "${WPCLIDIR}/wp-completion.bash [found]"
+        else
+            echo "Error: ${WPCLIDIR}/wp-completion.bash not found !!! Downloading now......"
+            wget -4cnv --no-check-certificate https://github.com/wp-cli/wp-cli/raw/master/utils/wp-completion.bash -O ${WPCLIDIR}/wp-completion.bash --tries=3 
+            ERROR=$?
+            if [[ "$ERROR" != '0' ]]; then
+                echo "Error: ${WPCLIDIR}/wp-completion.bash download failed."
+                exit $ERROR
+            else 
+                echo "Download done."
+            fi
+        fi
+        echo ""
+        WPCLICHECK=$(grep 'WP-CLI' /root/.bash_profile)
+        if [[ "$(id -u)" -ne '0' ]]; then
+            WPCLICHECK=$(grep 'WP-CLI' $HOME/.bash_profile)
+        fi
+        if [[ -z "$WPCLICHECK" ]]; then
+            echo ""
+            echo "" >> /root/.bash_profile
+            #echo "# Composer scripts" >> /root/.bash_profile
+            #echo "PATH=$HOME/.wp-cli/bin:$PATH" >> /root/.bash_profile
+            #echo "" >> /root/.bash_profile
+            echo "# WP-CLI completions" >> /root/.bash_profile
+            echo "source ${WPCLIDIR}/wp-completion.bash" >> /root/.bash_profile
+            if [[ "$(id -u)" -ne '0' ]]; then
+                echo ""
+                echo "" >> $HOME/.bash_profile
+                echo "# WP-CLI completions" >> $HOME/.bash_profile
+                echo "source ${WPCLIDIR}/wp-completion.bash" >> $HOME/.bash_profile
+            fi
+        fi
+        WPALIASCHECK=$(grep 'allow-root' /root/.bashrc)
+        if [[ "$(id -u)" -ne '0' ]]; then
+            WPALIASCHECK=$(grep 'allow-root' $HOME/.bashrc)
+        fi
+        if [[ -z "$WPALIASCHECK" ]]; then
+            echo "alias wp='wp --allow-root'" >> /root/.bashrc
+            if [[ "$(id -u)" -ne '0' ]]; then
+                echo "alias wp='wp --allow-root'" >> $HOME/.bashrc
+            fi
+        fi
+        echo "-------------------------------------------------------------"
+        echo "wp-cli info"
+        /usr/bin/wp --info --allow-root
+        echo "-------------------------------------------------------------"
+        
+        echo ""
+        echo "-------------------------------------------------------------"
+        echo "wp-cli install completed"
+        echo "Read http://wp-cli.org/ for full usage info"
+    fi
 }
 
 
