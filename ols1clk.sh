@@ -1539,7 +1539,13 @@ keyFile                 $SERVER_ROOT/conf/$KEY
 certFile                $SERVER_ROOT/conf/$CERT
 }
 
-
+listener wordpressssl_ecdsa {
+address                 *:$((SSLWPPORT+1))
+secure                  1
+map                     wordpress $SITEDOMAIN
+keyFile                 $SERVER_ROOT/conf/${KEY}.ecc
+certFile                $SERVER_ROOT/conf/${CERT}.ecc
+}
 END
 
             mkdir -p $SERVER_ROOT/conf/vhosts/wordpress/
