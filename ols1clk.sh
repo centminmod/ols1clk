@@ -2125,6 +2125,7 @@ fi
 if [ "x$INSTALLWORDPRESSPLUS" = "x0" ] && [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     echoG "Please access http://localhost:$WPPORT/ to finish setting up your WordPress site."
     echoG "And also you may want to activate the LiteSpeed Cache plugin to get better performance."
+fi
 
 echo
 echoY "Testing ..."
