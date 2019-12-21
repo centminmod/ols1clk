@@ -1604,6 +1604,10 @@ context / {
   type                    NULL
   location                \$VH_ROOT
   allowBrowse             1
+  extraHeaders            <<<END_extraHeaders
+Header unset X-Powered-By
+Header set Feature-Policy "geolocation 'none'; midi 'none'; camera 'none'; usb 'none'; magnetometer 'none'; accelerometer 'none'; vr 'none'; speaker 'none'; ambient-light-sensor 'none'; gyroscope 'none'; microphone 'none'"
+  END_extraHeaders
   indexFiles              index.php
 
   rewrite  {
@@ -1951,6 +1955,13 @@ installwpcli() {
     fi
 }
 
+
+phpini_edits() {
+    if [ -d /usr/local/lsws/lsphp73/etc/php.d ]; then
+        echo -n > /usr/local/lsws/lsphp73/etc/php.d/99-custom.ini
+        echo 'expose_php = Off' >> /usr/local/lsws/lsphp73/etc/php.d/99-custom.ini
+    fi
+}
 
 #####################################################################################
 ####   Main function here
@@ -2321,7 +2332,7 @@ if [ "x$ALLERRORS" = "x0" ] ; then
     echoG "Server Config file at $SERVER_ROOT/conf/httpd_config.conf"
     echoG "PHP php.ini file at /usr/local/lsws/php/php.ini"
     echoG "PHP Config Scan Dir at /usr/local/lsws/lsphp$LSPHPVER/etc/php.d/"
-    echoG "Please access http://localhost:$ADMINPORT/ for admin console with password = $ADMINPASSWORD."
+    echoG "Please access http://localhost:$ADMINPORT/ for admin console with password = $ADMINPASSWORD"
     if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
         echoG "Wordpress site vhost file at $VHOSTCONF"
         echoG "Wordpress web root at ${WORDPRESSPATH}"
@@ -2334,6 +2345,8 @@ if [ "x$ALLERRORS" = "x0" ] ; then
     else
         echo "$(/usr/local/lsws/bin/openlitespeed --version) without modpagespeed"
     fi
+
+    phpini_edits
 
     echo
     echoG "PHP Version Installed:"
