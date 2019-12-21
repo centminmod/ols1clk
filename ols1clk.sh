@@ -794,7 +794,7 @@ function install_wordpress
         if [ "x$WPBASENAME" != "xwordpress" ] ; then
             mv wordpress/ $WPBASENAME/
         fi
-
+        wp_permalinks
 
         wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chown -R --reference=$SERVER_ROOT/autoupdate  $WORDPRESSPATH
@@ -805,9 +805,7 @@ function install_wordpress
     fi
 }
 
-wpcli_config() {
-    # setup permalinks
-    installwpcli
+wp_permalinks() {
     pushd $WORDPRESSPATH
     \wp rewrite structure '/%post_id%/%postname%/' --allow-root
     echo > "$WORDPRESSPATH/.htaccess"
@@ -825,7 +823,11 @@ wpcli_config() {
     popd
 }
 
-
+wpcli_config() {
+    # setup permalinks
+    installwpcli
+    wp_permalinks
+}
 
 function setup_wordpress
 {
