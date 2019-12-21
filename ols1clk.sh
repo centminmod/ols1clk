@@ -1338,33 +1338,122 @@ function gen_selfsigned_cert
         SSL_EMAIL=.
     fi
 
+cat > /tmp/req.cnf <<EOF
+[req]
+default_bits       = 2048
+distinguished_name = req_distinguished_name
+req_extensions     = v3_req
+prompt = no
+[req_distinguished_name]
+C = ${SSL_COUNTRY}
+ST = ${SSL_STATE}
+L = ${SSL_LOCALITY}
+O = ${SSL_ORG}
+OU = ${SSL_ORGUNIT}
+CN = ${SSL_HOSTNAME}
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = ${SSL_HOSTNAME}
+DNS.2 = *.${SSL_HOSTNAME}
+EOF
+
+cat > /tmp/v3ext.cnf <<EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = ${SSL_HOSTNAME}
+DNS.2 = *.${SSL_HOSTNAME}
+EOF
+
+echo
+cat /tmp/req.cnf
+echo
+cat /tmp/v3ext.cnf
+
 
 # Create the certificate signing request
-    openssl req -new -passin pass:password -passout pass:password -out $CSR <<EOF
-${SSL_COUNTRY}
-${SSL_STATE}
-${SSL_LOCALITY}
-${SSL_ORG}
-${SSL_ORGUNIT}
-${SSL_HOSTNAME}
-${SSL_EMAIL}
-.
-.
+echo "openssl req -new -newkey rsa:2048 -sha256 -nodes -out ${CSR} -keyout ${KEY} -config /tmp/req.cnf"
+openssl req -new -newkey rsa:2048 -sha256 -nodes -out ${CSR} -keyout ${KEY} -config /tmp/req.cnf
+echo "openssl req -noout -text -in ${CSR} | grep DNS"
+openssl req -noout -text -in ${CSR} | grep DNS
+echo "openssl x509 -req -days 36500 -sha256 -in ${CSR} -signkey ${KEY} -out ${CERT} -extfile /tmp/v3ext.cnf"
+openssl x509 -req -days 36500 -sha256 -in ${CSR} -signkey ${KEY} -out ${CERT} -extfile /tmp/v3ext.cnf
+
+rm -f /tmp/req.cnf
+rm -f /tmp/v3ext.cnf
+
+# self-signed ssl cert with SANs
+cat > /tmp/req.cnf <<EOF
+[req]
+default_bits       = 2048
+distinguished_name = req_distinguished_name
+req_extensions     = v3_req
+prompt = no
+[req_distinguished_name]
+C = ${SSL_COUNTRY}
+ST = ${SSL_STATE}
+L = ${SSL_LOCALITY}
+O = ${SSL_ORG}
+OU = ${SSL_ORGUNIT}
+CN = ${SSL_HOSTNAME}
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+[alt_names]
+DNS.1 = ${SSL_HOSTNAME}
+DNS.2 = *.${SSL_HOSTNAME}
 EOF
-    echo ""
 
-    [ -f ${CSR} ] && openssl req -text -noout -in ${CSR}
-    echo ""
+cat > /tmp/v3ext.cnf <<EOF
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
 
-# Create the Key
-    openssl rsa -in privkey.pem -passin pass:password -passout pass:password -out ${KEY}
-# Create the Certificate
-    openssl x509 -in ${CSR} -out ${CERT} -req -signkey ${KEY} -days 1000
+[alt_names]
+DNS.1 = ${SSL_HOSTNAME}
+DNS.2 = *.${SSL_HOSTNAME}
+EOF
+    
+    cd "$CERTDIR"
+    curve=prime256v1
+    echo "openssl ecparam -out ${KEY}.ecc -name $curve -genkey"
+    openssl ecparam -out ${KEY}.ecc -name $curve -genkey
+    echo "openssl req -new -sha256 -key ${KEY}.ecc -nodes -out ${CSR}.ecc -config /tmp/req.cnf"
+    openssl req -new -sha256 -key ${KEY}.ecc -nodes -out ${CSR}.ecc -config /tmp/req.cnf
+    openssl req -noout -text -in ${CSR}.ecc | grep DNS
+    echo "openssl x509 -req -days 36500 -sha256 -in ${CSR}.ecc -signkey ${KEY}.ecc -out ${CERT}.ecc -extfile /tmp/v3ext.cnf"
+    openssl x509 -req -days 36500 -sha256 -in ${CSR}.ecc -signkey ${KEY}.ecc -out ${CERT}.ecc -extfile /tmp/v3ext.cnf
 
-    mv ${KEY}   $SERVER_ROOT/conf/$KEY
-    mv ${CERT}  $SERVER_ROOT/conf/$CERT
-    chmod 0600 $SERVER_ROOT/conf/$KEY
-    chmod 0600 $SERVER_ROOT/conf/$CERT
+    rm -f /tmp/req.cnf
+    rm -f /tmp/v3ext.cnf
+
+    \cp -f ${KEY}   $SERVER_ROOT/conf/${KEY}.rsa
+    \cp -f ${CERT}  $SERVER_ROOT/conf/${CERT}.rsa
+    mv -f ${KEY}   $SERVER_ROOT/conf/${KEY}
+    mv -f ${CERT}  $SERVER_ROOT/conf/${CERT}
+    chmod 0600 $SERVER_ROOT/conf/${KEY}.rsa
+    chmod 0600 $SERVER_ROOT/conf/${CERT}.rsa
+    chmod 0600 $SERVER_ROOT/conf/${KEY}
+    chmod 0600 $SERVER_ROOT/conf/${CERT}
+
+    \cp -f ${KEY}.ecc   $SERVER_ROOT/conf/${KEY}.ecc
+    \cp -f ${CERT}.ecc  $SERVER_ROOT/conf/${CERT}.ecc
+    chmod 0600 $SERVER_ROOT/conf/${KEY}.ecc
+    chmod 0600 $SERVER_ROOT/conf/${CERT}.ecc
+
+    echo
+    openssl x509 -noout -text < "$SERVER_ROOT/conf/${CERT}"
+    echo
+    openssl x509 -noout -text < "$SERVER_ROOT/conf/${CERT}.ecc"
+    echo
 }
 
 
