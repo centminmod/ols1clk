@@ -23,11 +23,15 @@
 TEMPRANDSTR=
 function getRandPassword
 {
-    dd if=/dev/urandom bs=8 count=1 of=/tmp/randpasswdtmpfile >/dev/null 2>&1
-    TEMPRANDSTR=`cat /tmp/randpasswdtmpfile`
-    rm /tmp/randpasswdtmpfile
-    local DATE=`date`
-    TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
+    if [ ! -f /usr/bin/pwgen ]; then
+        dd if=/dev/urandom bs=8 count=1 of=/tmp/randpasswdtmpfile >/dev/null 2>&1
+        TEMPRANDSTR=`cat /tmp/randpasswdtmpfile`
+        rm /tmp/randpasswdtmpfile
+        local DATE=`date`
+        TEMPRANDSTR=`echo "$TEMPRANDSTR$RANDOM$DATE" |  md5sum | base64 | head -c 8`
+    elif [ -f /usr/bin/pwgen ]; then
+        TEMPRANDSTR=$(pwgen -1nys -r \'\"\@\?\^\&\*\(\)\`\:\~\?\;\:\[\]\{\}\.\,\\\/\| 8)
+    fi
 }
 
 OSNAMEVER=UNKNOWN
@@ -54,8 +58,6 @@ USERPASSWORD=$TEMPRANDSTR
 getRandPassword
 WPPASSWORD=$TEMPRANDSTR
 
-ADMINPASSWORD=`echo "$RAND1$DATE" |  md5sum | base64 | head -c 8`
-ROOTPASSWORD=`echo "$RAND2$DATE" |  md5sum | base64 | head -c 8`
 MYSQLEXTRA_FILE='/root/.my.cnf'
 MYSQLINSTALL='n'
 DATABASENAME=olsdbname
@@ -506,7 +508,6 @@ function check_os
                 OSNAMEVER=CENTOS7
                 OSNAME=centos
                 OSVER=7
-                ISCENTOS=1
             else
                 cat /etc/redhat-release | grep " 8." >/dev/null
                 if [ $? = 0 ] ; then
@@ -2313,7 +2314,7 @@ if [ "x$ALLERRORS" = "x0" ] ; then
     fi
 
     echo
-    echoG "PHPV Version Installed:"
+    echoG "PHP Version Installed:"
     echo "/usr/local/lsws/lsphp${LSPHPVER}/bin/php -v"
     /usr/local/lsws/lsphp${LSPHPVER}/bin/php -v
 
