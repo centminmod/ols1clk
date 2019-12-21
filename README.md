@@ -45,11 +45,17 @@ If want to install Wordpress with default HTTP listen port to 8080 and default H
     cd ols1clk
     ./ols1clk.sh -e youremail@domain.com --lsphp 73 -w --dbname WPDATABASENAME --dbuser WPUSERNAME
 
-If want to install Wordpress and HTTP listen on port 81 and HTTPS on port 448
+If want to install Wordpress and HTTP listen on port 81 and HTTPS on port 448 and do manual web GUI install
 
     git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
     cd ols1clk
     ./ols1clk.sh -e youremail@domain.com --lsphp 73 -w --dbname WPDATABASENAME --dbuser WPUSERNAME --listenport 81 --ssllistenport 448
+
+If want to install Wordpress and HTTP listen on port 81 and HTTPS on port 448 and do automated full install
+
+    git clone -b centminmod-2019 --depth=1 https://github.com/centminmod/ols1clk
+    cd ols1clk
+    ./ols1clk.sh --wordpressplus wp.domain.com -e youremail@domain.com --lsphp 73 -w --dbname WPDATABASENAME --dbuser WPUSERNAME --listenport 81 --ssllistenport 448
 
 Running ols1clk
 --------

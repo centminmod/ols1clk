@@ -799,28 +799,30 @@ function install_wordpress
         wget -q -r --level=0 -nH --cut-dirs=2 --no-parent https://plugins.svn.wordpress.org/litespeed-cache/trunk/ --reject html -P $WORDPRESSPATH/wp-content/plugins/litespeed-cache/
         chown -R --reference=$SERVER_ROOT/autoupdate  $WORDPRESSPATH
 
-        # setup permalinks
-        installwpcli
-        pushd $WORDPRESSPATH
-        \wp rewrite structure '/%post_id%/%postname%/' --allow-root
-        echo > "$WORDPRESSPATH/.htaccess"
-        echo '# BEGIN WordPress' >> "$WORDPRESSPATH/.htaccess"
-        echo '<IfModule mod_rewrite.c>' >> "$WORDPRESSPATH/.htaccess"
-        echo 'RewriteEngine On' >> "$WORDPRESSPATH/.htaccess"
-        echo 'RewriteBase /' >> "$WORDPRESSPATH/.htaccess"
-        echo 'RewriteRule ^index\.php$ - [L]' >> "$WORDPRESSPATH/.htaccess"
-        echo 'RewriteCond %{REQUEST_FILENAME} !-f' >> "$WORDPRESSPATH/.htaccess"
-        echo 'RewriteCond %{REQUEST_FILENAME} !-d' >> "$WORDPRESSPATH/.htaccess"
-        echo 'RewriteRule . /index.php [L]' >> "$WORDPRESSPATH/.htaccess"
-        echo '</IfModule>' >> "$WORDPRESSPATH/.htaccess"
-        echo '# END WordPress' >> "$WORDPRESSPATH/.htaccess"
-        /usr/local/lsws/bin/lswsctrl restart
-        popd
-
         cd -
     else
         echoY "$WORDPRESSPATH exists, will use it."
     fi
+}
+
+wpcli_config() {
+    # setup permalinks
+    installwpcli
+    pushd $WORDPRESSPATH
+    \wp rewrite structure '/%post_id%/%postname%/' --allow-root
+    echo > "$WORDPRESSPATH/.htaccess"
+    echo '# BEGIN WordPress' >> "$WORDPRESSPATH/.htaccess"
+    echo '<IfModule mod_rewrite.c>' >> "$WORDPRESSPATH/.htaccess"
+    echo 'RewriteEngine On' >> "$WORDPRESSPATH/.htaccess"
+    echo 'RewriteBase /' >> "$WORDPRESSPATH/.htaccess"
+    echo 'RewriteRule ^index\.php$ - [L]' >> "$WORDPRESSPATH/.htaccess"
+    echo 'RewriteCond %{REQUEST_FILENAME} !-f' >> "$WORDPRESSPATH/.htaccess"
+    echo 'RewriteCond %{REQUEST_FILENAME} !-d' >> "$WORDPRESSPATH/.htaccess"
+    echo 'RewriteRule . /index.php [L]' >> "$WORDPRESSPATH/.htaccess"
+    echo '</IfModule>' >> "$WORDPRESSPATH/.htaccess"
+    echo '# END WordPress' >> "$WORDPRESSPATH/.htaccess"
+    /usr/local/lsws/bin/lswsctrl restart
+    popd
 }
 
 
@@ -2175,8 +2177,8 @@ echoY "MariaDB version:          " "$MARIADBVER"
 WORDPRESSINSTALLED=
 if [ "x$INSTALLWORDPRESS" = "x1" ] ; then
     echoY "Install WordPress:        " Yes
-    echoY "Permalinks Structure: " "/%post_id%/%postname%/"
-    echoY "WordPress .htaccess: " "$WORDPRESSPATH/.htaccess"
+    echoY "Permalinks Structure:     " "/%post_id%/%postname%/"
+    echoY "WordPress .htaccess:      " "$WORDPRESSPATH/.htaccess"
     echoY "WordPress HTTP port:      " "$WPPORT"
     if [ -f "$SERVER_ROOT/conf/${CERT}.ecc" ]; then
         echoY "WordPress RSA 2048 bit HTTPS port:     " "$SSLWPPORT"
@@ -2296,11 +2298,11 @@ if [ "x$INSTALLWORDPRESSPLUS" = "x1" ] ; then
     wget $INSTALLURL >/dev/null 2>&1
     sleep 5
 
-    #echo "wget --post-data 'language=$WPLANGUAGE' --referer=$INSTALLURL $INSTALLURL?step=1"
+    echo "wget --no-check-certificate --post-data \"language=$WPLANGUAGE\" --referer=$INSTALLURL $INSTALLURL?step="
     wget --no-check-certificate --post-data "language=$WPLANGUAGE" --referer=$INSTALLURL $INSTALLURL?step=1 >/dev/null 2>&1
     sleep 1
 
-    #echo "wget --post-data 'weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE' --referer=$INSTALLURL?step=1 $INSTALLURL?step=2 "
+    echo "wget --no-check-certificate --post-data \"weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE\" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2"
     wget --no-check-certificate --post-data "weblog_title=$WPTITLE&user_name=$WPUSER&admin_password=$WPPASSWORD&pass1-text=$WPPASSWORD&admin_password2=$WPPASSWORD&pw_weak=on&admin_email=$EMAIL&Submit=Install+WordPress&language=$WPLANGUAGE" --referer=$INSTALLURL?step=1 $INSTALLURL?step=2  >/dev/null 2>&1
 
     activate_cache
